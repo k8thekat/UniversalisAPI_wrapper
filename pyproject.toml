@@ -1,13 +1,7 @@
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
-
 [project]
 name = "UniversalisAPI_wrapper"
 dynamic = ["version", "dependencies"]
-authors = [
-    { name = "k8thekat", email = "Cadwalladerkatelynn@gmail.com" },
-]
+authors = [{ name = "k8thekat", email = "Cadwalladerkatelynn@gmail.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 description = "A bare-bones wrapper package to utilitize Universalis API in python."
 requires-python = ">=3.12.0"
@@ -26,16 +20,17 @@ classifiers = [
     "Typing :: Typed",
 ]
 keywords = ["ffxiv", "datamining", "universalis", "garland tools", "api"]
+
 [project.urls]
 GitHub = "https://github.com/k8thekat/UniversalisAPI_wrapper"
-
-[tool.setuptools.dynamic]
-dependencies = { file = "requirements.txt" }
-version = { attr = "universalis.__version__" }
 
 [tool.setuptools]
 packages = ["universalis"]
 include-package-data = true
+
+[tool.setuptools.dynamic]
+dependencies = { file = "requirements.txt" }
+version = { attr = "universalis.__version__" }
 
 [tool.ruff]
 target-version = "py312"
@@ -43,37 +38,24 @@ line-length = 140
 
 [tool.ruff.lint]
 exclude = ["local_data/*", ".venv/*", ".vscode/*"]
-select = [
-    "A",
-    "C4",
-    "F",
-    "G",
-    "I",
-    "PTH",
-    "RUF",
-    "SIM",
-    "TC",
-    "UP",
-    "W",
-    "PERF",
-    "ANN",
-]
+select = ["ALL"]
 ignore = [
+    "ANN401",
     "F401",
     "F402",
     "F403",
     "F405",
     "PERF203",
+    "PLR",
     "RUF001",
+    "RUF002",  # The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code.
     "RUF009",
+    "RUF052",  # for filtering "local dummy variable is accessed" eg. - vars using `_`
     "SIM105",
+    "UP007",
     "UP034",
     "UP038",
-    "UP007",
-    "ANN401",
-    "RUF052", # for filtering "local dummy variable is accessed" eg. - vars using `_`
-    "RUF002", # The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code. 
-    "UP045", # Type var `Optional[X]` vs `X | None`
+    "UP045",   # Type var `Optional[X]` vs `X | None`
 ]
 
 [tool.ruff.lint.isort]
@@ -89,8 +71,12 @@ mark-parentheses = false
 parametrize-names-type = "tuple"
 
 [tool.pyright]
-useLibraryCodeForTypes = true
-typeCheckingMode = "standard"
+typeCheckingMode = "strict"
 pythonVersion = "3.12"
-reportIncompatibleMethodOverride = false
 exclude = ["logs/**", "**/.venv/**"]
+useLibraryCodeForTypes = true
+reportIncompatibleMethodOverride = false
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
