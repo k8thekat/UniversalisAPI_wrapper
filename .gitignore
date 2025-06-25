@@ -1,4 +1,4 @@
-.local.py
 *.*/
 *__*/
 *_*/
+local.py
