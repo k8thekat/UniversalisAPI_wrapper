@@ -189,7 +189,7 @@ class UniversalisAPI:
         else:
             data = await self.session.get(url=url, **request_params)
 
-        if 200 <= data.status < 300:
+        if not 200 <= data.status < 300:
             raise UniversalisError(data.status, url, "generic http request")
         if data.status == 400:
             raise UniversalisError(
