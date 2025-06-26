@@ -1,17 +1,37 @@
+"""Copyright (C) 2021-2024 Katelynn Cadwallader.
+
+This file is part of Kuma Kuma.
+
+Universalis API wrapper is free software; you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation; either version 3, or (at your option)
+any later version.
+
+Universalis API wrapper is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public
+License for more details.
+
+You should have received a copy of the GNU General Public License
+along with Universalis API wrapper; see the file COPYING.  If not, write to the Free
+Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
+02110-1301, USA.
+"""
+
 from enum import IntEnum
 from typing import ClassVar
 
-__all__ = ("DataCenterEnum", "DataCenterToWorlds", "ItemQualityEnum", "LanguageEnum", "WorldEnum")
+__all__ = ("DataCenter", "DataCenterToWorlds", "ItemQuality", "Language", "World")
 
 
-class LanguageEnum(IntEnum):
+class Language(IntEnum):
     en = 1
     de = 2
     ja = 3
     fr = 4
 
 
-class DataCenterEnum(IntEnum):
+class DataCenter(IntEnum):
     Unknown = 0
     Elemental = 1
     Gaia = 2
@@ -35,21 +55,12 @@ class DataCenterEnum(IntEnum):
     UNK = 151
 
 
-class ItemQualityEnum(IntEnum):
-    """
-    Enum for specifying Item Quality.
-
-    Parameters
-    -----------
-    NQ = 0 |
-    HQ = 1
-    """
-
+class ItemQuality(IntEnum):
     NQ = 0
     HQ = 1
 
 
-class WorldEnum(IntEnum):
+class World(IntEnum):
     Ravana = 21
     Bismarck = 22
     Asura = 23
@@ -151,46 +162,46 @@ class WorldEnum(IntEnum):
 
 
 class DataCenterToWorlds:
-    Crystal: list[WorldEnum] = [  # noqa: RUF012
-        WorldEnum.Balmung,
-        WorldEnum.Brynhildr,
-        WorldEnum.Coeurl,
-        WorldEnum.Diabolos,
-        WorldEnum.Goblin,
-        WorldEnum.Malboro,
-        WorldEnum.Mateus,
-        WorldEnum.Zalera,
+    Crystal: list[World] = [  # noqa: RUF012
+        World.Balmung,
+        World.Brynhildr,
+        World.Coeurl,
+        World.Diabolos,
+        World.Goblin,
+        World.Malboro,
+        World.Mateus,
+        World.Zalera,
     ]
-    Aether: list[WorldEnum] = [  # noqa: RUF012
-        WorldEnum.Adamantoise,
-        WorldEnum.Cactuar,
-        WorldEnum.Faerie,
-        WorldEnum.Gilgamesh,
-        WorldEnum.Jenova,
-        WorldEnum.Midgardsormr,
-        WorldEnum.Sargatanas,
-        WorldEnum.Siren,
-    ]
-
-    Dynamis: list[WorldEnum] = [  # noqa: RUF012
-        WorldEnum.Cuchulainn,
-        WorldEnum.Golem,
-        WorldEnum.Halicarnassus,
-        WorldEnum.Kraken,
-        WorldEnum.Maduin,
-        WorldEnum.Marilith,
-        WorldEnum.Rafflesia,
-        WorldEnum.Seraph,
+    Aether: list[World] = [  # noqa: RUF012
+        World.Adamantoise,
+        World.Cactuar,
+        World.Faerie,
+        World.Gilgamesh,
+        World.Jenova,
+        World.Midgardsormr,
+        World.Sargatanas,
+        World.Siren,
     ]
 
-    Primal: list[WorldEnum] = [  # noqa: RUF012
-        WorldEnum.Behemoth,
-        WorldEnum.Excalibur,
-        WorldEnum.Exodus,
-        WorldEnum.Famfrit,
-        WorldEnum.Hyperion,
-        WorldEnum.Lamia,
-        WorldEnum.Leviathan,
-        WorldEnum.Ultros,
+    Dynamis: list[World] = [  # noqa: RUF012
+        World.Cuchulainn,
+        World.Golem,
+        World.Halicarnassus,
+        World.Kraken,
+        World.Maduin,
+        World.Marilith,
+        World.Rafflesia,
+        World.Seraph,
+    ]
+
+    Primal: list[World] = [  # noqa: RUF012
+        World.Behemoth,
+        World.Excalibur,
+        World.Exodus,
+        World.Famfrit,
+        World.Hyperion,
+        World.Lamia,
+        World.Leviathan,
+        World.Ultros,
     ]
     __data_centers__: ClassVar[list[str]] = ["Crystal", "Aether", "Dynamis", "Primal"]
