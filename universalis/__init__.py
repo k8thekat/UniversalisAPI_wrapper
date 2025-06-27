@@ -23,11 +23,10 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "1.1.0"
+__version__ = "1.2.0"
 __credits__ = "Universalis and Square Enix"
 
 
-import asyncio
 import datetime
 import json
 import logging
@@ -48,7 +47,7 @@ if TYPE_CHECKING:
     from _types import *
     from aiohttp.client import _RequestOptions as AiohttpRequestOptions  # pyright: ignore[reportPrivateUsage]
 
-    DataTypedAliase = Union[CurrentListing, CurrentDCWorlds, HistoryDCWorld, HistoryEntries]
+    DataTypedAliase = Union[CurrentListing, CurrentDCWorld, HistoryDCWorld, HistoryEntries]
 
 
 LOGGER = logging.getLogger(__name__)
@@ -61,7 +60,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["alpha", "beta", "pre-release", "release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=1, minor=1, revision=0, release_level="development")
+version_info: VersionInfo = VersionInfo(major=1, minor=2, revision=0, release_level="development")
 
 
 __all__ = (
@@ -135,6 +134,7 @@ class UniversalisAPI:
         """
         # Setting it to None by default will be the best as to keep the class as light weight as possible at runtime unless needed.
         self.session = session
+        self._session = None
 
         # Default search parameters.
         self.language = DEFAULT_LANGUAGE
@@ -142,8 +142,6 @@ class UniversalisAPI:
 
         # Universalis API
         self.base_api_url = "https://universalis.app/api/v2"
-        self.api_call_time = datetime.datetime.now(datetime.UTC)
-        self._max_api_calls = 20
 
         # These are the "Trimmed" API fields for Universalis Market Results.
         # These can be overwritten via properties.
@@ -157,15 +155,6 @@ class UniversalisAPI:
         )
 
         self._load_json()
-
-    @property
-    def max_api_calls(self) -> int:
-        """The limiting value of how many API calls per second, default is 20."""
-        return self._max_api_calls
-
-    @max_api_calls.setter
-    def max_api_calls(self, value: int) -> None:
-        self._max_api_calls = value
 
     @property
     def single_item_fields(self) -> str:
@@ -233,27 +222,17 @@ class UniversalisAPI:
 
     async def _request(self, url: str, request_params: Optional[AiohttpRequestOptions] = None) -> Any:
         LOGGER.debug("<%s._request() | url: %s | user session: %s | req_params: %s ", __class__.__name__, url, self.session, request_params)
-
-        cur_time = datetime.datetime.now(datetime.UTC)
-        max_diff = datetime.timedelta(milliseconds=1000 / self.max_api_calls)
-        if (cur_time - self.api_call_time) < max_diff:
-            sleep_time: float = (max_diff - (cur_time - self.api_call_time)).total_seconds() + 0.1
-            LOGGER.warning(
-                "<%s._request() | API rate limit hit, sleeping...%ss",
-                __class__.__name__,
-                sleep_time,
-            )
-            await asyncio.sleep(delay=sleep_time)
-
         # If the user supplied session is None; we create our own and set it to a private
-        # attribute so we can close it later.
-        # otherwise we will use the user supplied session.
+        # attribute so we can close it later, otherwise we will use the user supplied session.
         if self.session is None:
-            session = aiohttp.ClientSession()
-            self._session = session
-            LOGGER.debug("<%s._request() | Creating local `aiohttp.ClientSession()` | session: %s", __class__.__name__, session)
+            if self._session is None:
+                session: aiohttp.ClientSession = aiohttp.ClientSession()
+                self._session = session
+                LOGGER.debug("<%s._request() | Creating local `aiohttp.ClientSession()` | session: %s", __class__.__name__, session)
+            else:
+                session = self._session
         else:
-            session: aiohttp.ClientSession = self.session
+            session = self.session
 
         # kwargs handler.
         if request_params is None:
@@ -353,7 +332,7 @@ class UniversalisAPI:
         if trim_item_fields:
             api_url += self.single_item_fields
 
-        res: CurrentDCWorlds = await self._request(url=api_url)
+        res: CurrentDCWorld = await self._request(url=api_url)
         LOGGER.debug("<%s._get_current_data>. | DC/World: %s | Item ID: %s", __class__.__name__, world_or_dc.name, item)
         LOGGER.debug("<%s._get_current_data> URL: %s | Response:\n%s", __class__.__name__, api_url, res)
         return CurrentData(universalis=self, data=res)
@@ -434,10 +413,10 @@ class UniversalisAPI:
             if trim_item_fields:
                 api_url += self.multi_item_fields
 
-            res: MultiCurrentData = await self._request(url=api_url)
+            res: MultiPartData = await self._request(url=api_url)
             LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
             LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
-            results.extend([CurrentData(universalis=self, data=value) for value in res["items"].values()])
+            results.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
         return results
 
     async def get_history_data(
@@ -507,6 +486,83 @@ class UniversalisAPI:
         )
         res = await self._request(url=api_url)
         return HistoryData(universalis=self, data=res)
+
+    async def get_bulk_history_data(
+        self,
+        items: list[str] | list[int],
+        *,
+        world_or_dc: Optional[World | DataCenter] = None,
+        num_listings: int = 10,
+        min_price: int = 0,
+        max_price: int = 2147483647,
+        history: int = 604800000,
+    ) -> list[HistoryData]:
+        """Retrieve the Universalis marketboard history data for the provided item.
+
+        Retrieves the history data for the requested item and world or data center.
+
+        API: https://docs.universalis.app/#market-board-sale-history
+
+        .. note::
+            If you want to modify the returned data fields, access `<UniversalisAPI>.single_item_fields` property and change the format.
+            - See `https://docs.universalis.app/` and use their forms to generate a string with the fields you want.
+
+
+        .. note::
+            - If you specify a `<World>`.
+                - All `<HistoryData.entries>` will not have the attributes `world_name`.
+            - If you specify a `<DataCenter>`.
+                - All  `<HistoryData.entries>` will have the `world_id` and `world_name` attributes.
+                - `<HistoryData>` will also have an additional attribute called `dc_name`.
+
+        .. note::
+            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
+
+
+        Parameters
+        ----------
+        items: :class:`str | int`
+            A Final Fantasy 14 item id of int or str type.
+        world_or_dc: :class:`DataCenter | World`, optional
+            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
+            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
+        num_listings: :class:`int`, optional
+            _description_, by default 10.
+        min_price: :class:`int`, optional
+            _description_, by default 0.
+        max_price: :class:`Optional[int]`
+            The max price of the item, by default None.
+        history: :class:`int`, optional
+            The timestamp float value for how far to go into the history; by default 604800000.
+
+
+        Returns
+        -------
+        :class:`HistoryData`
+            The JSON response converted into a list of :class:`HistoryData` objects.
+
+        """
+        query: list[str] = []
+        for entry in items:
+            if isinstance(entry, int):
+                query.append(str(entry))
+            else:
+                query.append(entry)
+
+        if world_or_dc is None:
+            world_or_dc = self.default_datacenter
+
+        results: list[HistoryData] = []
+        for _ in range(0, len(query), 100):
+            api_url: str = (
+                f"{self.base_api_url}/history/{world_or_dc.name}/{','.join(query)}?entriesToReturn={num_listings}"
+                f"&statsWithin={history}&minSalePrice={min_price}&maxSalePrice={max_price}"
+            )
+            res: MultiPartData = await self._request(url=api_url)
+            LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
+            LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
+            results.extend(HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value)
+        return results
 
     async def get_suggested_price(
         self,
@@ -849,7 +905,7 @@ class CurrentData(GenericData):
     _recent_history: list[HistoryDataEntries]
     _universalis: UniversalisAPI
 
-    def __init__(self, universalis: UniversalisAPI, data: CurrentDCWorlds) -> None:
+    def __init__(self, universalis: UniversalisAPI, data: CurrentDCWorld) -> None:
         """Build your JSON response :class:`CurrentData`.
 
         Represents the data from `<UniversalisAPI>.get_current_data()`.
@@ -864,6 +920,20 @@ class CurrentData(GenericData):
         """
         super().__init__(data=data)
         self._universalis = universalis
+        self._repr_keys = [
+            "world_name",
+            "last_upload_time",
+            "item_id",
+            "regular_sale_velocity",
+            "units_for_sale",
+            "units_sold",
+            "average_price",
+            "min_price",
+            "listings_count",
+            "recent_history_count",
+            "listings",
+            "recent_history",
+        ]
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if isinstance(value, list) and key.lower() == "listings":
@@ -1005,6 +1075,7 @@ class CurrentDataEntries(Generic):
 
         """
         super().__init__(data=data)
+        self._repr_keys = ["world_name", "price_per_unit", "quantity", "hq", "materia", "total", "tax"]
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"on_mannequin", "is_crafted", "hq"} and isinstance(value, int):
@@ -1150,7 +1221,7 @@ class HistoryData(GenericData):
         """
         super().__init__(data=data)
         self._universalis = universalis
-        self._repr_keys = ["item_id", "world_name", "dc_name", "entries"]
+        self._repr_keys = ["world_name", "dc_name", "item_id", "last_upload_time", "entries"]
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() == "entries" and isinstance(value, list):
@@ -1223,7 +1294,7 @@ class HistoryDataEntries(Generic):
 
         """
         super().__init__(data=data)
-        self._repr_keys = ["hq", "quantity", "price_per_unit", "world_name", "timestamp"]
+        self._repr_keys = ["world_name", "timestamp", "quantity", "price_per_unit", "hq"]
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"hq", "on_mannequin"} and isinstance(value, int):

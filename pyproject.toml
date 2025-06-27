@@ -37,7 +37,6 @@ target-version = "py312"
 line-length = 140
 
 [tool.ruff.lint]
-exclude = ["local_data/*", ".venv/*", ".vscode/*", "*local.py"]
 select = ["ALL"]
 ignore = [
     "ANN401",
@@ -75,9 +74,11 @@ mark-parentheses = false
 parametrize-names-type = "tuple"
 
 [tool.pyright]
+venvPath = "."
+venv = ".venv"
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
-exclude = ["logs/**", "**/.venv/**", "**/.vscode-server/"]
+exclude = ["logs/**", "**/.venv/**", "**/.vscode-server/", "/usr/*"]
 include = ["universalis"]
 useLibraryCodeForTypes = true
 reportIncompatibleMethodOverride = false

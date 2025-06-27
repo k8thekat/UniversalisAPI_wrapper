@@ -20,7 +20,7 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NotRequired, Optional, Required, TypedDict
+from typing import TYPE_CHECKING, NotRequired, Required, TypedDict
 
 if TYPE_CHECKING:
     from ._enums import DataCenter, ItemQuality, World
@@ -39,7 +39,7 @@ class ListingMateria(TypedDict):
     materiaID: int
 
 
-class CurrentListing(TypedDict, total=False):
+class CurrentListing(TypedDict):
     """Univertsalis API Current DC/World JSON Response Keys.
 
     Related to :class:`UniversalisAPICurrentTyped` keys.
@@ -48,11 +48,11 @@ class CurrentListing(TypedDict, total=False):
     lastReviewTime: int
     pricePerUnit: int
     quantity: int
-    stainID: int
-    worldName: str
-    worldID: int
+    stainID: NotRequired[int]
+    worldName: NotRequired[str]
+    worldID: NotRequired[int]
     creatorName: str
-    creatorID: Optional[int]
+    creatorID: NotRequired[int]
     hq: bool
     isCrafted: bool
     listingID: str
@@ -61,14 +61,14 @@ class CurrentListing(TypedDict, total=False):
     retainerCity: int
     retainerID: int
     retainerName: str
-    sellerID: Optional[int]
+    sellerID: int
     total: int
     tax: int
     timestamp: int
     buyerName: str
 
 
-class CurrentDCWorlds(TypedDict, total=False):
+class CurrentDCWorld(TypedDict):
     """Univertsalis API Current DC/World JSON Response.
 
     `./universalis_data/data/universalis_api_current_dc.json`
@@ -76,9 +76,9 @@ class CurrentDCWorlds(TypedDict, total=False):
     """
 
     itemID: int
-    worldID: int
+    worldID: NotRequired[int]
     lastUploadTime: int
-    dcName: str  # DC only
+    dcName: NotRequired[str]  # DC only
     listings: Required[list[CurrentListing]]
     recentHistory: Required[list[CurrentListing]]
     currentAveragePrice: float | int
@@ -100,7 +100,7 @@ class CurrentDCWorlds(TypedDict, total=False):
     stackSizeHistogramNQ: dict[str, int]
     stackSizeHistogramHQ: dict[str, int]
     worldUploadTimes: dict[str, int]
-    worldName: str
+    worldName: NotRequired[str]
     listingsCount: int
     recentHistoryCount: int
     unitsForSale: int
@@ -108,7 +108,7 @@ class CurrentDCWorlds(TypedDict, total=False):
     hasData: bool
 
 
-class HistoryEntries(TypedDict, total=False):
+class HistoryEntries(TypedDict):
     """Universalis API History.
 
     Related to :class:`HistoryDCWorld.entries`.
@@ -145,14 +145,14 @@ class HistoryDCWorld(TypedDict):
     worldName: NotRequired[str]
 
 
-class MultiCurrentData(TypedDict):
+class MultiPartData(TypedDict):
     """MultiCurrentData is a representation of a bulk/multi item Universalis query.
 
     The key in items is the `item_id` queried.
     """
 
     itemIDs: list[int]
-    items: dict[str, CurrentDCWorlds]
+    items: dict[str, CurrentDCWorld | HistoryDCWorld]
     worldID: int
     unresolvedItems: list[int]
     worldName: str
