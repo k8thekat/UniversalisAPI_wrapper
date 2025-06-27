@@ -37,10 +37,13 @@ target-version = "py312"
 line-length = 140
 
 [tool.ruff.lint]
-exclude = ["local_data/*", ".venv/*", ".vscode/*"]
+exclude = ["local_data/*", ".venv/*", ".vscode/*", "*local.py"]
 select = ["ALL"]
 ignore = [
     "ANN401",
+    "D401", # Ignore "Imperative Mood" statement for docstrings.
+    "ERA001", #Ignore commented out code.
+    "FIX002", # Ignore TODO's telling you to "fix them".
     "F401",
     "F402",
     "F403",
@@ -48,14 +51,15 @@ ignore = [
     "PERF203",
     "PLR",
     "RUF001",
-    "RUF002",  # The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code.
+    "RUF002", # The character U+2013 "–" could be confused with the ASCII character U+002d "-", which is more common in source code.
     "RUF009",
-    "RUF052",  # for filtering "local dummy variable is accessed" eg. - vars using `_`
+    "RUF052", # for filtering "local dummy variable is accessed" eg. - vars using `_`
     "SIM105",
+    "TD003", # Ignore TODO's not having a link/url to an issue.
     "UP007",
     "UP034",
     "UP038",
-    "UP045",   # Type var `Optional[X]` vs `X | None`
+    "UP045", # Type var `Optional[X]` vs `X | None`
 ]
 
 [tool.ruff.lint.isort]
@@ -73,7 +77,8 @@ parametrize-names-type = "tuple"
 [tool.pyright]
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
-exclude = ["logs/**", "**/.venv/**"]
+exclude = ["logs/**", "**/.venv/**", "**/.vscode-server/"]
+include = ["universalis"]
 useLibraryCodeForTypes = true
 reportIncompatibleMethodOverride = false
 

@@ -20,28 +20,36 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
 
 from __future__ import annotations
 
+__title__ = "Universalis API wrapper"
+__author__ = "k8thekat"
+__license__ = "GNU"
+__version__ = "1.0.0"
+__credits__ = "Universalis and Square Enix"
+
+
 import asyncio
 import datetime
 import json
 import logging
 import pathlib
 import statistics
-from typing import TYPE_CHECKING, Any, ClassVar, Literal, NamedTuple, Optional
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Self, Union
 
 import aiohttp
+
+from universalis._enums import Language
 
 from ._enums import *
 from .errors import UniversalisError
 
 if TYPE_CHECKING:
+    import types
+
     from _types import *
     from aiohttp.client import _RequestOptions as AiohttpRequestOptions  # pyright: ignore[reportPrivateUsage]
 
-__title__ = "Universalis API wrapper"
-__author__ = "k8thekat"
-__license__ = "GNU"
-__version__ = "0.0.1"
-__credits__ = "Universalis and Square Enix"
+    DataTypedAliase = Union[CurrentListing, CurrentDCWorlds, HistoryDCWorld, HistoryEntries]
+
 
 LOGGER = logging.getLogger(__name__)
 
@@ -57,8 +65,6 @@ version_info: VersionInfo = VersionInfo(major=0, minor=0, revision=1, release_le
 
 
 __all__ = (
-    "DEFAULT_DATACENTER",
-    "DEFAULT_WORLD",
     "IGNORED_KEYS",
     "PRE_FORMATTED_KEYS",
     "CurrentData",
@@ -77,12 +83,15 @@ PRE_FORMATTED_KEYS: dict[str, str] = {
 
 IGNORED_KEYS: list[str] = []
 
-DEFAULT_WORLD: World = World.Zalera
 DEFAULT_DATACENTER: DataCenter = DataCenter.Crystal
+DEFAULT_LANGUAGE: Language = Language.en
 
 
 class UniversalisAPI:
     """A bare-bones wrapper for Universalis API queries.
+
+    Supports context-manager style usage. `async with UniversalisAPI() as market: ...`,
+    otherwise call `<UniversalisAPI>.clean_up()` if you did not provide a `aiohttp.ClientSession`.
 
     Attributes
     ----------
@@ -105,8 +114,15 @@ class UniversalisAPI:
 
     # Universalis API stuff
     base_api_url: str
+    # Our private session object if we have to create the CLientSession
+    # See `_request()`
+    _session: Optional[aiohttp.ClientSession]
     session: Optional[aiohttp.ClientSession]
     item_dict: dict[str, dict[str, str]]
+
+    # Defaults
+    _language: Language
+    _datacenter: DataCenter
 
     def __init__(self, session: Optional[aiohttp.ClientSession] = None) -> None:
         """Build your Universalis API wrapper.
@@ -119,7 +135,8 @@ class UniversalisAPI:
         """
         # Setting it to None by default will be the best as to keep the class as light weight as possible at runtime unless needed.
         self.session = session
-
+        self.language = DEFAULT_LANGUAGE
+        self.datacenter = DEFAULT_DATACENTER
         # Universalis API
         self.base_api_url = "https://universalis.app/api/v2"
         self.api_call_time = datetime.datetime.now(datetime.UTC)
@@ -127,8 +144,14 @@ class UniversalisAPI:
 
         # These are the "Trimmed" API fields for Universalis Market Results.
         # These can be overwritten via properties.
-        self._single_item_fields = "&fields=itemID%2Clistings.quantity%2Clistings.worldName%2Clistings.pricePerUnit%2Clistings.hq%2Clistings.total%2Clistings.tax%2Clistings.retainerName%2Clistings.creatorName%2Clistings.lastReviewTime%2ClastUploadTime"
-        self._multi_item_fields = "&fields=items.itemID%2Citems.listings.quantity%2Citems.listings.worldName%2Citems.listings.pricePerUnit%2Citems.listings.hq%2Citems.listings.total%2Citems.listings.tax%2Citems.listings.retainerName%2Citems.listings.creatorName%2Citems.listings.lastReviewTime%2Citems.lastUploadTime"
+        self._single_item_fields = (
+            "&fields=itemID%2Clistings.quantity%2Clistings.worldName%2Clistings.pricePerUnit%2Clistings.hq"
+            "%2Clistings.total%2Clistings.tax%2Clistings.retainerName%2Clistings.creatorName%2Clistings.lastReviewTime%2ClastUploadTime"
+        )
+        self._multi_item_fields = (
+            "&fields=items.itemID%2Citems.listings.quantity%2Citems.listings.worldName%2Citems.listings.pricePerUnit"
+            "%2Citems.listings.hq%2Citems.listings.total%2Citems.listings.tax%2Citems.listings.retainerName%2Citems.listings.creatorName%2Citems.listings.lastReviewTime%2Citems.lastUploadTime"
+        )
 
         self._load_json()
 
@@ -159,6 +182,38 @@ class UniversalisAPI:
     def multi_item_fields(self, value: str) -> None:
         self._multi_item_fields = value
 
+    @property
+    def language(self) -> Language:
+        """Set the default language to be used when returning Final Fantasy Item names.
+
+        Returns
+        -------
+        :class:`Language`
+            A :class:`Language` enum.
+
+        """
+        return self._language
+
+    @language.setter
+    def language(self, value: Language) -> None:
+        self._language: Language = value
+
+    @property
+    def default_datacenter(self) -> DataCenter:
+        """Set the default Final Fantasy 14 DataCenter to be used when the `world_or_dc` parameter is optional.
+
+        Returns
+        -------
+        :class:`DataCenter`
+            A :class:`DataCenter` enum.
+
+        """
+        return self._datacenter
+
+    @default_datacenter.setter
+    def default_datacenter(self, value: DataCenter) -> None:
+        self._datacenter = value
+
     def _load_json(self) -> None:
         path: pathlib.Path = pathlib.Path(__file__).parent.joinpath("items.json")
         if path.exists():
@@ -167,11 +222,11 @@ class UniversalisAPI:
             msg = "Unable to locate our `items.json`. | Path: %s"
             raise FileNotFoundError(msg, path)
 
-    def _get_item(self, item_id: int, lang: Language = Language.en) -> Optional[str]:
+    def _get_item(self, item_id: int) -> Optional[str]:
         res = self.item_dict.get(str(item_id))
         if res is None:
             return None
-        return res[lang.name]
+        return res[self.language.name]
 
     async def _request(self, url: str, request_params: Optional[AiohttpRequestOptions] = None) -> Any:
         cur_time = datetime.datetime.now(datetime.UTC)
@@ -180,14 +235,20 @@ class UniversalisAPI:
             sleep_time: float = (max_diff - (cur_time - self.api_call_time)).total_seconds() + 0.1
             await asyncio.sleep(delay=sleep_time)
 
+        # If the user supplied session is None; we create our own and set it to a private
+        # attribute so we can close it later.
+        # otherwise we will use the user supplied session.
         if self.session is None:
-            self.session = aiohttp.ClientSession()
+            session = aiohttp.ClientSession()
+            self._session = session
+        else:
+            session: aiohttp.ClientSession = self.session
 
         # kwargs handler.
         if request_params is None:
-            data: aiohttp.ClientResponse = await self.session.get(url=url)
+            data: aiohttp.ClientResponse = await session.get(url=url)
         else:
-            data = await self.session.get(url=url, **request_params)
+            data = await session.get(url=url, **request_params)
 
         if not 200 <= data.status < 300:
             raise UniversalisError(data.status, url, "generic http request")
@@ -214,7 +275,7 @@ class UniversalisAPI:
         self,
         item: str | int,
         *,
-        world_or_dc: DataCenter | World = DEFAULT_DATACENTER,
+        world_or_dc: Optional[DataCenter | World] = None,
         num_listings: int = 10,
         num_history_entries: int = 10,
         item_quality: ItemQuality = ItemQuality.NQ,
@@ -222,24 +283,39 @@ class UniversalisAPI:
     ) -> CurrentData:
         """Retrieve the current Universalis marketboard data for the provided item.
 
+        Retrieves the data currently shown on the market board for the requested item and world or data center.
+
         API: https://docs.universalis.app/#current-item-price
+
+        .. note::
+            If you want to modify the returned data fields, access `<UniversalisAPI>.single_item_fields` property and change the format.
+            - See `https://docs.universalis.app/` and use their forms to generate a string with the fields you want.
+
+
+        .. note::
+            - If you specify a `<World>`.
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
+            - If you specify a `<DataCenter>`.
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
+                - `<CurrentData>` will also have an additional attribute called `dc_name`.
+
+        .. note::
+            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
 
 
         Parameters
         ----------
-        items: :class:`list[str] | list[int] | str | int`
-            Either a single Item ID or a list of Item IDs in str or int format.
-        world_or_dc: :class:`DataCenterEnum | WorldEnum`, optional
-            The DataCenter or World to query your results for, by default DataCenterEnum.Crystal.
-            - If you specify a `<WorldEnum>`, all `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
-            - If you specify a `<DataCenterEnum>`, all `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
-                - `<CurrentData>` will also have an additional attribute called `dc_name`.
+        item: :class:`str| int`
+            A Final Fantasy 14 item id of int or str type.
+        world_or_dc: :class:`DataCenter | World`, optional
+            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
+            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
         num_listings: :class:`int`, optional
             The number of listing results for the query, by default 10.
         num_history_entries: :class:`int`, optional
             The number of history results for the query, by default 10.
-        item_quality: :class:`ItemQualityEnum`, optional
-            The Quality of the Item to query, by default ItemQualityEnum.NQ.
+        item_quality: :class:`ItemQuality`, optional
+            The quality of the Item to query, by default `<ItemQuality>.NQ`.
         trim_item_fields: :class:`bool`, optional
             If we want to trim the result fields or not, by default True.
 
@@ -252,6 +328,9 @@ class UniversalisAPI:
         # Sanitize the value as a str for usage.
         if isinstance(item, int):
             item = str(item)
+        # If no datacenter is provided; use the libs Instance default.
+        if world_or_dc is None:
+            world_or_dc = self.datacenter
 
         api_url: str = (
             f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={item_quality.value}"
@@ -263,15 +342,15 @@ class UniversalisAPI:
             api_url += self.single_item_fields
 
         res: CurrentDCWorlds = await self._request(url=api_url)
-        LOGGER.debug("<Universalis._get_current_data>. | DC/World: %s | Item ID: %s", world_or_dc.name, item)
-        LOGGER.debug("<Universalis._get_current_data> URL: %s | Response:\n%s", api_url, res)
-        return CurrentData(data=res)
+        LOGGER.debug("<%s._get_current_data>. | DC/World: %s | Item ID: %s", __class__.__name__, world_or_dc.name, item)
+        LOGGER.debug("<%s._get_current_data> URL: %s | Response:\n%s", __class__.__name__, api_url, res)
+        return CurrentData(universalis=self, data=res)
 
     async def get_bulk_current_data(
         self,
         items: list[str] | list[int],
         *,
-        world_or_dc: DataCenter | World = DEFAULT_DATACENTER,
+        world_or_dc: Optional[DataCenter | World] = None,
         num_listings: int = 10,
         num_history_entries: int = 10,
         item_quality: ItemQuality = ItemQuality.NQ,
@@ -279,27 +358,52 @@ class UniversalisAPI:
     ) -> list[CurrentData]:
         """Retrieve a bulk item search of Universalis marketboard data.
 
+        Retrieves the data currently shown on the market board for the requested item and world or data center.
+        Up to 100 item IDs can be comma-separated in order to retrieve data for multiple items at once.
+
+        API: https://docs.universalis.app/#current-item-price
+
+        .. note::
+            If you want to modify the returned data fields, access `<UniversalisAPI>.multi_item_fields` property and change the format.
+            - See `https://docs.universalis.app/` and use their forms to generate a string with the fields you want.
+
+        .. note::
+            - If you specify a `<World>`.
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
+            - If you specify a `<DataCenter>`.
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
+                - `<CurrentData>` will also have an additional attribute called `dc_name`.
+
+
+        .. note::
+            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
+
+
         Parameters
         ----------
         items: :class:`list[str] | list[int]`
-            A list of Item IDs in str or int format.
-        world_or_dc: :class:`DataCenterEnum | WorldEnum`, optional
-            The DataCenter or World to query your results for, by default DataCenterEnum.Crystal.
+            A list of Final Fantasy 14 item ids of int or str type.
+        world_or_dc: :class:`DataCenter | World`, optional
+            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
+            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
         num_listings: :class:`int`, optional
             The number of listing results for the query, by default 10.
         num_history_entries: :class:`int`, optional
             The number of history results for the query, by default 10.
-        item_quality: :class:`ItemQualityEnum`, optional
-            The Quality of the Item to query, by default ItemQualityEnum.NQ.
+        item_quality: :class:`ItemQuality`, optional
+            The quality of the Item to query, by default `<ItemQuality>.NQ`.
         trim_item_fields: :class:`bool`, optional
             If we want to trim the result fields or not, by default True.
 
         Returns
         -------
         :class:`list[CurrentData]`
-            Returns the JSON response converted into a list of :class:`HistoryData` objects.
+            Returns the JSON response converted into a list of :class:`CurrentData` objects.
 
         """
+        if world_or_dc is None:
+            world_or_dc = self.default_datacenter
+
         query: list[str] = []
         for entry in items:
             if isinstance(entry, int):
@@ -307,48 +411,67 @@ class UniversalisAPI:
             else:
                 query.append(entry)
 
-        # ? Suggestion
-        # Handle lists over 100 items.
         results: list[CurrentData] = []
         for _ in range(0, len(query), 100):
-            api_url: str = f"{self.base_api_url}/{world_or_dc.name}/{','.join(query)}?listings={num_listings}&entries={num_history_entries}&hq={item_quality.value}"
+            api_url: str = (
+                f"{self.base_api_url}/{world_or_dc.name}/{','.join(query)}?listings={num_listings}"
+                f"&entries={num_history_entries}&hq={item_quality.value}"
+            )
 
             # If we need/want to trim fields.
             if trim_item_fields:
                 api_url += self.multi_item_fields
 
             res: MultiCurrentData = await self._request(url=api_url)
-            LOGGER.debug("<Universalis._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", world_or_dc.name, len(items))
-            LOGGER.debug("<Universalis._get_bulk_current_data> URL: %s | Response:\n%s", api_url, res)
-            results.extend([CurrentData(data=value) for value in res["items"].values()])
+            LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
+            LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
+            results.extend([CurrentData(universalis=self, data=value) for value in res["items"].values()])
         return results
 
     async def get_history_data(
         self,
         item: str | int,
         *,
-        data_center: World | DataCenter = DEFAULT_DATACENTER,
+        world_or_dc: Optional[World | DataCenter] = None,
         num_listings: int = 10,
         min_price: int = 0,
         max_price: int = 2147483647,
         history: int = 604800000,
     ) -> HistoryData:
-        """Universalis Marketboard History Data.
+        """Retrieve the Universalis marketboard history data for the provided item.
+
+        Retrieves the history data for the requested item and world or data center.
 
         API: https://docs.universalis.app/#market-board-sale-history
+
+        .. note::
+            If you want to modify the returned data fields, access `<UniversalisAPI>.single_item_fields` property and change the format.
+            - See `https://docs.universalis.app/` and use their forms to generate a string with the fields you want.
+
+
+        .. note::
+            - If you specify a `<World>`.
+                - All `<HistoryData.entries>` will not have the attributes `world_name`.
+            - If you specify a `<DataCenter>`.
+                - All  `<HistoryData.entries>` will have the `world_id` and `world_name` attributes.
+                - `<HistoryData>` will also have an additional attribute called `dc_name`.
+
+        .. note::
+            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
 
 
         Parameters
         ----------
-        items: :class:`Union[list[str], str]`
-            The Item IDs to look up, limit of 99 entries.
-        data_center: :class:` WorldEnum | DataCenterEnum`, optional
-            The Datacenter to fetch the results from, by default DataCenterEnum.Crystal.
+        item: :class:`str | int`
+            A Final Fantasy 14 item id of int or str type.
+        world_or_dc: :class:`DataCenter | World`, optional
+            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
+            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
         num_listings: :class:`int`, optional
             _description_, by default 10.
         min_price: :class:`int`, optional
             _description_, by default 0.
-        max_price: :class:`Union[int, None]`, optional
+        max_price: :class:`Optional[int]`
             The max price of the item, by default None.
         history: :class:`int`, optional
             The timestamp float value for how far to go into the history; by default 604800000.
@@ -363,35 +486,44 @@ class UniversalisAPI:
         if isinstance(item, int):
             item = str(item)
 
+        if world_or_dc is None:
+            world_or_dc = self.datacenter
+
         api_url: str = (
-            f"{self.base_api_url}/history/{data_center.name}/{item}?entriesToReturn={num_listings}"
+            f"{self.base_api_url}/history/{world_or_dc.name}/{item}?entriesToReturn={num_listings}"
             f"&statsWithin={history}&minSalePrice={min_price}&maxSalePrice={max_price}"
         )
         res = await self._request(url=api_url)
-        return HistoryData(data=res)
+        return HistoryData(universalis=self, data=res)
 
     async def get_suggested_price(
         self,
-        item_id: int | str,
+        item: int | str,
         *,
-        world: World = DEFAULT_WORLD,
+        world_or_dc: Optional[World | DataCenter] = None,
         item_quality: ItemQuality = ItemQuality.NQ,
         num_of_listings: int = 50,
     ) -> str:
         """Use current listings and recent history listings to give a "suggestive" price and stack size to sell the item.
 
         .. note::
-        The information is purely based on the sample size;
-        so increasing or decreasing the `num_of_listings` parameter can drastically affect the results.
+            The information is purely based on the sample size.
+            - So increasing or decreasing the `num_of_listings` parameter can skew the results.
+
+
+        .. note::
+            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
+
 
         Parameters
         ----------
-        item_id: :class:`int | str`
-            The Item ID to look up.
-        world: :class:`WorldEnum`, optional
-            The Final Fantasy World name to fetch results for, by default DEFAULT_WORLD.
-        item_quality: :class:`ItemQualityEnum`, optional
-            The Item Quality, by default ItemQualityEnum.NQ.
+        item: :class:`int | str`
+            A Final Fantasy 14 item id of int or str type.
+        world_or_dc: :class:`DataCenter | World`, optional
+            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
+            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
+        item_quality: :class:`ItemQuality`, optional
+            The Item Quality, by default `<ItemQuality>.NQ`.
         num_of_listings: :class:`int`, optional
             The number of listings and recent history listings to fetch, by default 50.
 
@@ -402,12 +534,16 @@ class UniversalisAPI:
             mean price diff for current and recent history and suggested stack sizing.
 
         """
-        if isinstance(item_id, str):
-            item_id = int(item_id)
+        if isinstance(item, str):
+            item = int(item)
+
+        if world_or_dc is None:
+            world_or_dc = self.default_datacenter
+
         # Get a bulk of data to check average price/stack and other information to make a suggested price.
         res: CurrentData = await self.get_current_data(
-            item=item_id,
-            world_or_dc=world,
+            item=item,
+            world_or_dc=world_or_dc,
             num_listings=num_of_listings,
             num_history_entries=num_of_listings,
             item_quality=item_quality,
@@ -422,8 +558,10 @@ class UniversalisAPI:
 
         cur_stacksize_mean: float = statistics.mode(data=[entry.quantity for entry in res.listings])
         history_stacksize_mean: float = statistics.mean(data=[entry.quantity for entry in res.recent_history])
+        # TODO(@k8thekat): - omit exaggerated values that exceed a threshold over the cost?
+        # #(eg. Omit 10mill cost for a 100k item or similar)
+        # ----
         # Let's sort our listings by highest price first.
-        # TODO - omit exaggerated values that exceed a threshold over the cost? (eg. Omit 10mill cost for a 100k item or similar)
         sorted_cur_listings: list[CurrentDataEntries] = sorted(res.listings, key=lambda x: x.price_per_unit, reverse=True)
         sorted_history_listings: list[HistoryDataEntries] = sorted(res.recent_history, key=lambda x: x.price_per_unit, reverse=True)
 
@@ -437,8 +575,9 @@ class UniversalisAPI:
         hist_mean_diff = int(sorted_history_listings[0].price_per_unit - history_price_mean)
 
         temp: list[str] = []
+        # TODO(@k8thekat): Consider creating a class to hold this information and define a `__repr__` method to return these results?
         temp.extend((
-            f"Price Insight for: {self._get_item(res.item_id)} ({res.item_id}) | Item Quality: {item_quality.name} | World: {world.name} | Sample Size: {num_of_listings}",
+            f"Price Insight for: {self._get_item(res.item_id)} ({res.item_id}) | Item Quality: {item_quality.name} | World: {world_or_dc.name} | Sample Size: {num_of_listings}",
             f"- Current Highest Price/Unit: {sorted_cur_listings[0].price_per_unit} | Lowest Price/Unit: {sorted_cur_listings[-1].price_per_unit}",
             f"- Current Mean Price/Unit: {cur_price_mean} | Price/Unit diff over Mean: {cur_mean_diff} | {cur_mean_diff / sorted_cur_listings[0].price_per_unit % 2 * 100:.2f}%",
             f"- History Highest Price/Unit: {sorted_history_listings[0].price_per_unit} | Lowest Price/Unit: {sorted_history_listings[-1].price_per_unit}",
@@ -458,8 +597,9 @@ class UniversalisAPI:
 
         - Adds a `_` before any uppercase char in the `key_name` and then `.lowers()` that uppercase char.
 
-        **Note**:
-            When using the parameter `pre_formatted_keys` here is an example. "I want to replace `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
+        .. note::
+            When using the parameter `pre_formatted_keys` here is an example.
+            - "I want to replace `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
 
 
         Parameters
@@ -471,6 +611,7 @@ class UniversalisAPI:
             - You may provide your own, or use the constant `IGNORED_KEYS`
         pre_formatted_keys: :class:`Optional[dict[str, str]]`
             An dictionary with keys consisting of values to compare against and the value of the keys to be the replacement string.
+            - You may provide your own, or use the constant `PRE_FORMATTED_KEYS`
 
         Returns
         -------
@@ -498,23 +639,39 @@ class UniversalisAPI:
                 temp += f"_{e.lower()}"
                 continue
             temp += e
-        LOGGER.debug("<UniversalisAPI.pep8_key_name> key_name: %s | Converted: %s", key_name, temp)
+        LOGGER.debug("<%s.from_camel_case> key_name: %s | Converted: %s", __class__.__name__, key_name, temp)
         return temp
+
+    async def clean_up(self) -> None:
+        """Cleans up any open resources."""
+        LOGGER.debug("<%s.>_clean_up. | Closing open `aiohttp.ClientSession` %s", __class__.__name__, self._session)
+        if self._session is not None:
+            await self._session.close()
+
+    async def __aexit__(  # noqa: D105
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[types.TracebackType],
+    ) -> None:
+        await self.clean_up()
+
+    async def __aenter__(self) -> Self:  # noqa: D105
+        return self
 
 
 class Generic:
-    _logger: ClassVar[logging.Logger] = logging.getLogger(__name__)
     _repr_keys: list[str]
-    _universalis: Optional[UniversalisAPI]
 
     world_id: Optional[int]
     world_name: Optional[str]
-    dc_name: Optional[str]  # This value only exists if you look up results by "Datacenter" instead of "World"
+    # This value only exists if you look up results by "Datacenter" instead of "World"
+    dc_name: Optional[str]
+    _raw: DataTypedAliase
 
-    def __init__(self, data: Any) -> None:
-        self._logger.debug("<%s.__init__()> data: %s", __class__.__name__, data)
+    def __init__(self, data: DataTypedAliase) -> None:
+        LOGGER.debug("<%s.__init__()> data: %s", __class__.__name__, data)
         self._raw = data
-        self._universalis = UniversalisAPI()
 
     def __str__(self) -> str:
         return self.__repr__()
@@ -531,7 +688,12 @@ class Generic:
 
 
 class GenericData(Generic):
-    """Base class for mutual attributes and properties for Universalis data."""
+    """Base class for mutual attributes and properties for Universalis data.
+
+    .. note::
+        Inherits attributes from :class:`Generic`.
+
+    """
 
     item_id: int
     nq_sale_velocity: float | int
@@ -543,36 +705,25 @@ class GenericData(Generic):
 
     _last_upload_time: datetime.datetime | int
 
-    def __getattribute__(self, name: str) -> Any:
-        # Reason this is being done is some values may not exist on the class.
-
-        #####
-        # Why would a string be callable???
-        #####
-        if callable(name):
-            return super().__getattribute__(name)
-
-        #####
-        # Why do we special case callables to do the exact same thing?
-        #####
-        try:
-            return super().__getattribute__(name)
-        except AttributeError:
-            return None
+    def __hash__(self) -> int:
+        return hash(self.item_id)
 
     def __eq__(self, other: object) -> bool:
         return isinstance(other, self.__class__) and self.item_id == other.item_id
 
     @property
     def last_upload_time(self) -> datetime.datetime | int:
-        """This exists on both Current Data and History Data."""
+        """The last upload time for this endpoint."""
         return self._last_upload_time
 
     @last_upload_time.setter
     def last_upload_time(self, value: int) -> None:
         # This appears to be including miliseconds.. so we need to divide the value by 1000
         try:
-            self._last_upload_time = datetime.datetime.fromtimestamp(timestamp=(value / 1000))
+            self._last_upload_time = datetime.datetime.fromtimestamp(
+                timestamp=(value / 1000),
+                tz=datetime.UTC,
+            )
         except ValueError:
             self._last_upload_time = value
 
@@ -580,32 +731,48 @@ class GenericData(Generic):
 class CurrentData(GenericData):
     """A representation of Universalis marketboard current listings data.
 
+    .. note::
+        Inherits attributes from :class:`GenericData`.
+
+
+    .. note::
+        Attribute `world_id` and `world_name` only exists when data was fetched by a specified World.
+
+
+
     Attributes
     ----------
     item_id: :class:`int`
-        The FFXIV Item ID.
+        The Final Fantasy 14 item ID.
     listings: :class:`list[CurrentDataEntries]`
-        A list of current marketboad entries, sorted by `timestamp`.
+        A current-shown listings, sorted by `timestamp`.
     recent_history: :class:`list[HistoryDataEntries]`
-        A list of recently sold entries with relevant data, sorted by `timestamp`.
+        The currently-shown sales, sorted by `timestamp`.
     world_id: :class:`Optional[int]`
-        The Final Fantasy 14 World ID, this will match up to the :class:`WorldEnum`.
+        The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable.
     world_name: :class:`Optional[str]`
-        The Final Fantasy 14 World name.
+        The Final Fantasy 14 World name, if applicable.
     nq_sale_velocity: :class:`float | int`
-        The rate at which NQ of this item sells per day.
+        The average number of NQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     hq_sale_velocity: :class:`float | int`
-        The rate at which HQ of this item sells per day.
+        The average number of HQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     regular_sale_velocity: :class:`float | int`
-        The rate at which HQ + NQ of this item sells per day.
+        The average number of sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     stack_size_histogram: :class:`dict[str, int]`
-        A histogram of HQ + NQ stacksize sales.
+        A map of quantities to listing counts, representing the number of listings of each quantity.
     stack_size_histogram_nq: :class:`dict[str, int]`
-        A histogram of NQ stacksize sales.
+        A map of quantities to NQ listing counts, representing the number of listings of each quantity.
     stack_size_histogram_hq: :class:`dict[str, int]`
-        A histogram of HQ stacksize sales.
+        A map of quantities to HQ listing counts, representing the number of listings of each quantity.
     last_upload_time: :class:`datetime | int`
-        When the data was uploaded for the provided World, otherwise this will be the most recent value from the `world_upload_times` attribute.
+        The last upload time for the provided endpoint,
+        otherwise this will be the most recent value from the `world_upload_times` attribute.
     current_average_price: :class:`float | int`
         The average price accross all listings including HQ and NQ.
     current_average_price_nq: :class:`float | int`
@@ -613,37 +780,37 @@ class CurrentData(GenericData):
     current_average_price_hq: :class:`float | int`
         The average price accross all HQ listings.
     average_price: :class:`float | int`
-        The historic average price including HQ and NQ.
+        The average sale price.
     average_price_nq: :class:`float | int`
-        The historic average NQ price.
+        TThe average NQ sale price.
     average_price_hq: f:class:`loat | int`
-        The historic average HQ price.
+        The average HQ sale price.
     min_price: :class:`int`
-        The current listings min price including HQ and NQ.
+        The minimum listing price.
     min_price_nq: :class:`int`
-        The current listings NQ min price.
+        The minimum NQ listing price.
     min_price_hq: :class:`int`
-        The current listings HQ min price.
+        The minimum HQ listing price.
     max_price: :class:`int`
-        The current listings max price including HQ and NQ.
+        The maximum listing price.
     max_price_nq: :class:`int`
-        The current listings NQ max price.
+        The maximum NQ listing price.
     max_price_hq: :class:`int`
-        The current listings HQ max price.
+        The maximum HQ listing price
     world_upload_times: :class:`dict[str, int]`
-        The timestamps for each World for when data was last updated.
+        The last upload times in milliseconds since epoch for each world in the response, if this is a DC request.
     listings_count: :class:`int`
-        The lenth or number of listings results fetched/found.
-        - This value may be limited by the `num_listings` parameter when fetching data.
+        The number of listings retrieved for the request. When using the "listings" limit parameter, this may be
+        different from the number of sale entries returned in an API response.
     recent_history_count: :class:`int`
-        The lenth or number of recent_history results fetched/found.
-        - This value may be limited by the `num_listings` parameter when fetching data.
+        The number of sale entries retrieved for the request. When using the "entries" limit parameter, this may be
+        different from the number of sale entries returned in an API response.
     units_for_sale: :class:`int`
-        Total number of units for sale.
+        The number of items (not listings) up for sale.
     units_sold: :class:`int`
-        The total number of unit's sold for this item.
+        The number of items (not sale entries) sold over the retrieved sales.
     has_data: :class:`bool`
-        If the item has data or not. (I assume this is more used for Universalis's side of data management.)
+        Whether this item has ever been updated. Useful for newly-released items.
 
     """
 
@@ -668,9 +835,23 @@ class CurrentData(GenericData):
 
     _listings: list[CurrentDataEntries]
     _recent_history: list[HistoryDataEntries]
+    _universalis: UniversalisAPI
 
-    def __init__(self, data: CurrentDCWorlds) -> None:
+    def __init__(self, universalis: UniversalisAPI, data: CurrentDCWorlds) -> None:
+        """Build your JSON response :class:`CurrentData`.
+
+        Represents the data from `<UniversalisAPI>.get_current_data()`.
+
+        Parameters
+        ----------
+        universalis: :class:`UniversalisAPI`
+            A reference to the UniversalisAPI object.
+        data: :class:`CurrentDCWorlds`
+            The JSON response data as a dict.
+
+        """
         super().__init__(data=data)
+        self._universalis = universalis
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if isinstance(value, list) and key.lower() == "listings":
@@ -682,16 +863,16 @@ class CurrentData(GenericData):
 
     @property
     def listings(self) -> list[CurrentDataEntries]:
-        """..."""
+        """A current-shown listings, sorted by `timestamp`."""
         return self._listings
 
     @listings.setter
-    def listings(self, value: list[CurrentKeys]) -> None:
+    def listings(self, value: list[CurrentListing]) -> None:
         self._listings: list[CurrentDataEntries] = sorted([CurrentDataEntries(data=entry) for entry in value])
 
     @property
     def recent_history(self) -> list[HistoryDataEntries]:
-        """..."""
+        """The currently-shown sales, sorted by `timestamp`."""
         return self._recent_history
 
     @recent_history.setter
@@ -703,7 +884,7 @@ class CurrentData(GenericData):
 
         Parameters
         ----------
-        world: :class:`Optional[WorldEnum]`, optional
+        world: :class:`Optional[World]`, optional
             If you want to filter out just your Final Fantasy 14 World, by default None.
         reverse: :class:`bool`, optional
             If you want the "most expensive" price per unit at the start of the array, by default True.
@@ -728,54 +909,60 @@ class CurrentDataEntries(Generic):
 
     - Comparing `<CurrentDataEntries>` will check quality and timestamp.
 
+    .. note::
+        Inherits attributes from :class:`Generic`.
+
+
+    .. note::
+        Attribute `world_id` and `world_name` only exists when data was fetched by a specified World.
+
+
     Attributes
     ----------
     price_per_unit: :class:`int`
-        The price per item.
+        The price per unit sold.
     quantity: :class:`int`
-        The quantity of items in the listing.
+        The stack size sold.
     stain_id: :class:`Optional[int]`
-        UNK?
+        The ID of the dye on this item.
     world_id: :class:`Optional[int]`
-        The Final Fantasy 14 World ID, this will match up to the :class:`WorldEnum`.
-        - This only exists when fetching History data for a specific World.
+        The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable.
     world_name: :class:`Optional[str]`
-        The Final Fantasy 14 World name.
-        - This only exists when fetching History data for a specific World.
+        The Final Fantasy 14 World name, if applicable.
     creator_name: :class:`str`
-        The person who crafted the item, it any.
+        The creator's character name.
     creator_id: :class:`Optional[int]`
-        The persons ID who crafted the item, it any.
+        A SHA256 hash of the creator's ID.
     hq: :class:`bool`
-        If the item is HQ or not.
+        Whether or not the item is high-quality.
     is_crafted: :class:`bool`
-        If the item was crafted.
+        Whether or not the item is crafted.
     listing_id: :class:`str`
-        The Universalis listing ID.
+        The ID of this listing.
     last_review_time: :class:`datetime | int`
-        When the data was last updated for the provided listing.
-    materia: :class:`list`
-        If the item has any Materia melded into it.
+        The time that this listing was posted.
+    materia: :class:`int`
+        The number of materia melded into the item.
     on_mannequin: :class:`bool`
-        If the item is on a mannequin.
+        Whether or not the item is being sold on a mannequin.
     retainer_city: :class:`int`
-        The city the retainer is located in.
+        The city ID of the retainer.
     retainer_id: :class:`int`
-        The ID of the retainer.
+        The retainer's ID.
     retainer_name: :class:`str`
-        The name of the retainer.
-    seller_id: :class:`Optional[int]`
-        The sellers ID if any.
+        The retainer's name.
+    seller_id: :class:`int`
+        A SHA256 hash of the seller's ID.
     total: :class:`int`
-        The total cost for the item not including tax.
+        The total price for the item not including tax.
     tax: :class:`int`
-        The total tax for the item.
+        The Gil sales tax (GST) to be added to the total price during purchase.
 
     """
 
     price_per_unit: int
     quantity: int
-    stain_id: int
+    stain_id: Optional[int]
     world_name: Optional[str]
     world_id: Optional[int]
     creator_name: str
@@ -783,19 +970,28 @@ class CurrentDataEntries(Generic):
     hq: bool
     is_crafted: bool
     listing_id: str
-    materia: list[...]
     on_mannequin: bool
     retainer_city: int
     retainer_id: int
     retainer_name: str
-    seller_id: Optional[int]
+    seller_id: int
     total: int
     tax: int
 
     _last_review_time: datetime.datetime | int
+    _materia: int
 
-    def __init__(self, data: CurrentKeys) -> None:
-        """..."""
+    def __init__(self, data: CurrentListing) -> None:
+        """Build your JSON response :class:`CurrentDataEntries`.
+
+        Represents the data from property `<CurrentData>.listings`.
+
+        Parameters
+        ----------
+        data: :class:`CurrentKeys`
+            The JSON response data as a dict.
+
+        """
         super().__init__(data=data)
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
@@ -804,9 +1000,12 @@ class CurrentDataEntries(Generic):
             else:
                 setattr(self, key, value)
 
+    def __hash__(self) -> int:  # noqa: D105
+        return hash(self)
+
     @property
     def last_review_time(self) -> datetime.datetime | int:
-        """..."""
+        """The time that this listing was posted."""
         return self._last_review_time
 
     @last_review_time.setter
@@ -816,12 +1015,50 @@ class CurrentDataEntries(Generic):
         except ValueError:
             self._last_review_time = value
 
+    @property
+    def materia(self) -> int:
+        """The number of Materia the item has."""
+        return self._materia
+
+    @materia.setter
+    def materia(self, value: list[ListingMateria]) -> None:
+        # Universalis has them as a dictionary; but the slotID and materiaID values are useless.
+        # So just knowing the number of materia in the item is useful enough.
+        self._materia = len(value)
+
     def __eq__(self, other: object) -> bool:
-        """..."""
-        return isinstance(other, self.__class__) and self.hq == other.hq  # and self.price_per_unit == other.price_per_unit
+        """Comapres the `<object>.hq` attribute to `self`.
+
+        Parameters
+        ----------
+        other: :class:`object`
+            An object of instance :class:`CurrentDataEntries`.
+
+        Returns
+        -------
+        :class:`bool`
+            If `<CurrentDataEntries>.hq` is equal to `<object>.hq` and `<CurrentDataEntries>.listing_id` is equal to `<object>.listing_id`.
+
+        """
+        return (
+            isinstance(other, self.__class__) and self.hq == other.hq and self.listing_id == other.listing_id
+        )  # and self.price_per_unit == other.price_per_unit
 
     def __lt__(self, other: object) -> bool:
-        """..."""
+        """Comapres the `<object>.hq` attribute to `self.hq` and `<object>.last_review_time` > `self.last_review_time`.
+
+        Parameters
+        ----------
+        other: :class:`object`
+            An object of instance :class:`CurrentDataEntries`.
+
+        Returns
+        -------
+        :class:`bool`
+            If `<CurrentDataEntries>.hq` is equal to `<object>.hq`
+            and `<CurrentDataEntries>.last_review_time` < `<object>.last_review_time`.
+
+        """
         return (
             isinstance(other, self.__class__)
             and self.hq == other.hq
@@ -836,55 +1073,82 @@ class CurrentDataEntries(Generic):
 class HistoryData(GenericData):
     """A representation of Universalis marketboard history data.
 
+    .. note::
+        Inherits attributes from :class:`GenericData`.
+
+
+    .. note::
+        Attribute `world_id` and `world_name` only exists when data was fetched by a specified World.
+
+
+    .. note::
+        Attribute `dc_name` only exists when data was fetched by a Datacenter.
+
+
     Attributes
     ----------
     item_id: :class:`int`
         The Final Fantasy 14 Item ID.
     entries: :class:`list[HistoryDataEntries]`
-        A list of marketboard sale history data.
+        The historical sales.
     world_id: :class:`Optional[int]`
-        The Final Fantasy 14 World ID, this will match up to the :class:`WorldEnum`.
-        - This only exists when fetching data for a specific World.
+        The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable.
     world_name: :class:`Optional[str]`
-        The Final Fantasy 14 World name.
-        - This only exists when fetching data for a specific World.
+        The Final Fantasy 14 World name, if applicable.
     dc_name: :class:`Optional[str]`
-        The FInal Fantasy Datacenter name.
-        - This only exists when fetching data for an entire Datacenter.
+        The Final Fantasy Datacenter name, if applicable.
     nq_sale_velocity: :class:`float | int`
-        The rate at which NQ of this item sells per day.
+        The average number of NQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     hq_sale_velocity: :class:`float | int`
-        The rate at which HQ of this item sells per day.
+        The average number of HQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     regular_sale_velocity: :class:`float | int`
-        The rate at which HQ + NQ of this item sells per day.
+        The average number of sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
+        This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
+        This statistic is more useful in historical queries.
     stack_size_histogram: :class:`dict[str, int]`
-        A histogram of HQ + NQ stacksize sales.
+        A map of quantities to listing counts, representing the number of listings of each quantity.
     stack_size_histogram_nq: :class:`dict[str, int]`
-        A histogram of NQ stacksize sales.
+        A map of quantities to NQ listing counts, representing the number of listings of each quantity.
     stack_size_histogram_hq: :class:`dict[str, int]`
-        A histogram of HQ stacksize sales.
+        A map of quantities to HQ listing counts, representing the number of listings of each quantity.
     last_upload_time: :class:`datetime | int`
-        When the data was uploaded for the provided World.
-        - Otherwise this will be the most recent value from the `world_upload_times` attribute if using Datacenter data.
+        The last upload time for the provided endpoint.
 
     """
 
     _entries: list[HistoryDataEntries]
+    _universalis: UniversalisAPI
 
-    def __init__(self, data: History) -> None:
-        """..."""
+    def __init__(self, universalis: UniversalisAPI, data: HistoryDCWorld) -> None:
+        """Build your JSON response :class:`HistoryData`.
+
+        Represents the data from `<UniversalisAPI>.get_current_data()`.
+
+        Parameters
+        ----------
+        universalis: :class:`UniversalisAPI`
+            A reference to the UniversalisAPI object.
+        data: :class:`CurrentDCWorlds`
+            The JSON response data as a dict.
+
+        """
         super().__init__(data=data)
+        self._universalis = universalis
         self._repr_keys = ["item_id", "world_name", "dc_name", "entries"]
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
-            if key.lower() == "entries" and isinstance(value, list) and len(value) > 1:
+            if key.lower() == "entries" and isinstance(value, list):
                 self.entries = value
             else:
                 setattr(self, key, value)
 
     @property
     def entries(self) -> list[HistoryDataEntries]:
-        """..."""
+        """The historical sales."""
         return sorted(self._entries)
 
     @entries.setter
@@ -895,40 +1159,57 @@ class HistoryData(GenericData):
 class HistoryDataEntries(Generic):
     """A represensation of Universalis marketboard history data entries.
 
+    - Comparing `<HistoryDataEntries>` will check quality and timestamp.
+
+    .. note::
+        Inherits attributes from :class:`Generic`.
+
+
+    .. note::
+        Attribute `world_id` and `world_name` only exists when data was fetched by a specified World.
+
+
     Attributes
     ----------
     world_id: :class:`Optional[int]`
-        The Final Fantasy 14 World ID, this will match up to the :class:`WorldEnum`.
-        - This only exists when fetching History data for a Datacenter.
+        The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable.
     world_name: :class:`Optional[str]`
-        The Final Fantasy 14 World name.
-        - This only exists when fetching History data for a Datacenter.
+        The Final Fantasy 14 World name, if applicable.
     hq: :class:`bool`
-        If the item is HQ or not.
+        Whether or not the item was high-quality.
     price_per_unit: :class:`int`
-        The price per item.
+        The price per unit sold.
     quantity: :class:`int`
-        The quantity of items in the listing.
+        The stack size sold
     timestamp: :class:`datetime | int`
         When the listing was sold.
-    buyer_name: :class:`str`
-        The player who purchased the listing.
-    on_mannequin: :class:`bool`
-        If the item is on a mannequin.
+    buyer_name: :class:`Optional[str]`
+        The buyer's character name. This may be null.
+    on_mannequin: :class:`Optional[bool]`
+        Whether or not this was purchased from a mannequin. This may be null.
 
     """
 
     hq: bool
     price_per_unit: int
     quantity: int
-    buyer_name: str
-    on_mannequin: bool
+    buyer_name: Optional[str]
+    on_mannequin: Optional[bool]
     world_name: Optional[str]
     world_id: Optional[int]
     _timestamp: datetime.datetime | int
 
     def __init__(self, data: HistoryEntries) -> None:
-        """..."""
+        """Build your JSON response :class:`HistoryDataEntries`.
+
+        Represents the data from property `<HistoryData>.entries` and `<CurrentData>.recent_history`.
+
+        Parameters
+        ----------
+        data: :class:`HistoryEntries`
+            The JSON response data as a dict.
+
+        """
         super().__init__(data=data)
         self._repr_keys = ["hq", "quantity", "price_per_unit", "world_name", "timestamp"]
         for key_, value in data.items():
@@ -938,10 +1219,40 @@ class HistoryDataEntries(Generic):
             else:
                 setattr(self, key, value)
 
+    def __hash__(self) -> int:  # noqa: D105
+        return hash(self)
+
     def __eq__(self, other: object) -> bool:
+        """Comapres the `<object>.hq` attribute to `self`.
+
+        Parameters
+        ----------
+        other: :class:`object`
+            An object of instance :class:`HistoryDataEntries`.
+
+        Returns
+        -------
+        :class:`bool`
+            If `<HistoryDataEntries>.hq` is equal to `<object>.hq`.
+
+        """
         return isinstance(other, self.__class__) and self.hq == other.hq and self.price_per_unit == other.price_per_unit
 
     def __lt__(self, other: object) -> bool:
+        """Comapres the `<object>.hq` attribute to `self.hq` and `<object>.timestamp` > `self.timestamp`.
+
+        Parameters
+        ----------
+        other: :class:`object`
+            An object of instance :class:`HistoryDataEntries`.
+
+        Returns
+        -------
+        :class:`bool`
+            If `<HistoryDataEntries>.hq` is equal to `<object>.hq`
+            and `<HistoryDataEntries>.timestamp` < `<object>.timestamp`.
+
+        """
         return (
             isinstance(other, self.__class__)
             and self.hq == other.hq
@@ -954,7 +1265,7 @@ class HistoryDataEntries(Generic):
 
     @property
     def timestamp(self) -> datetime.datetime | int:
-        """..."""
+        """When the listing was sold."""
         return self._timestamp
 
     @timestamp.setter

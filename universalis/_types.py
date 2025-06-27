@@ -34,44 +34,12 @@ class MarketBoardParams(TypedDict, total=False):
     trim_item_fields: bool
 
 
-class AggregatedFields(TypedDict, total=False):
-    """Universalis API Aggregated DC/World Json Response fields.
-
-    Related to :class:`UniversalisAPIAggregatedKeysTyped` keys.
-    """
-
-    price: int
-    worldId: int
-    tempstamp: int
-    quantity: float
+class ListingMateria(TypedDict):
+    slotID: int
+    materiaID: int
 
 
-class AggregatedKeys(TypedDict, total=False):
-    """Universalis API Aggregated DC/World JSON Response Keys.
-
-    Related to :class:`UniversalisAPIAggregatedTyped` keys.
-    """
-
-    minListing: AggregatedFields
-    recentPurchase: AggregatedFields
-    averageSalePrice: AggregatedFields
-    dailySaleVelocy: AggregatedFields
-
-
-class Aggregated(TypedDict, total=False):
-    """Universalis API Aggregated DC/World JSON Response.
-
-    `./universalis_data/data/universalis_api_aggregated_dc.json`
-    `./universalis_data/data/universalis_api_aggregated_world.json`
-    """
-
-    itemId: int
-    nq: AggregatedKeys
-    hq: AggregatedKeys
-    worldUploadTimes: AggregatedKeys
-
-
-class CurrentKeys(TypedDict, total=False):
+class CurrentListing(TypedDict, total=False):
     """Univertsalis API Current DC/World JSON Response Keys.
 
     Related to :class:`UniversalisAPICurrentTyped` keys.
@@ -88,7 +56,7 @@ class CurrentKeys(TypedDict, total=False):
     hq: bool
     isCrafted: bool
     listingID: str
-    materia: list[...]  # ????
+    materia: list[ListingMateria]
     onMannequin: bool
     retainerCity: int
     retainerID: int
@@ -111,8 +79,8 @@ class CurrentDCWorlds(TypedDict, total=False):
     worldID: int
     lastUploadTime: int
     dcName: str  # DC only
-    listings: Required[list[CurrentKeys]]
-    recentHistory: Required[list[CurrentKeys]]
+    listings: Required[list[CurrentListing]]
+    recentHistory: Required[list[CurrentListing]]
     currentAveragePrice: float | int
     currentAveragePriceNQ: float | int
     currentAveragePriceHQ: float | int
@@ -143,7 +111,7 @@ class CurrentDCWorlds(TypedDict, total=False):
 class HistoryEntries(TypedDict, total=False):
     """Universalis API History.
 
-    Related to :class:`HistoryTyped.entries`.
+    Related to :class:`HistoryDCWorld.entries`.
     """
 
     hq: bool
@@ -156,7 +124,7 @@ class HistoryEntries(TypedDict, total=False):
     worldID: NotRequired[int]
 
 
-class History(TypedDict):
+class HistoryDCWorld(TypedDict):
     """Universalis API History DC/World JSON Response.
 
     `./local_data/api_examples/universalis_api_history_dc.json`
@@ -183,4 +151,8 @@ class MultiCurrentData(TypedDict):
     The key in items is the `item_id` queried.
     """
 
+    itemIDs: list[int]
     items: dict[str, CurrentDCWorlds]
+    worldID: int
+    unresolvedItems: list[int]
+    worldName: str
