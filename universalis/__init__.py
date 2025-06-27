@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "1.0.0"
+__version__ = "1.1.0"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -61,7 +61,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["alpha", "beta", "pre-release", "release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=0, minor=0, revision=1, release_level="development")
+version_info: VersionInfo = VersionInfo(major=1, minor=1, revision=0, release_level="development")
 
 
 __all__ = (
@@ -135,8 +135,11 @@ class UniversalisAPI:
         """
         # Setting it to None by default will be the best as to keep the class as light weight as possible at runtime unless needed.
         self.session = session
+
+        # Default search parameters.
         self.language = DEFAULT_LANGUAGE
-        self.datacenter = DEFAULT_DATACENTER
+        self.default_datacenter = DEFAULT_DATACENTER
+
         # Universalis API
         self.base_api_url = "https://universalis.app/api/v2"
         self.api_call_time = datetime.datetime.now(datetime.UTC)
@@ -229,10 +232,17 @@ class UniversalisAPI:
         return res[self.language.name]
 
     async def _request(self, url: str, request_params: Optional[AiohttpRequestOptions] = None) -> Any:
+        LOGGER.debug("<%s._request() | url: %s | user session: %s | req_params: %s ", __class__.__name__, url, self.session, request_params)
+
         cur_time = datetime.datetime.now(datetime.UTC)
         max_diff = datetime.timedelta(milliseconds=1000 / self.max_api_calls)
         if (cur_time - self.api_call_time) < max_diff:
             sleep_time: float = (max_diff - (cur_time - self.api_call_time)).total_seconds() + 0.1
+            LOGGER.warning(
+                "<%s._request() | API rate limit hit, sleeping...%ss",
+                __class__.__name__,
+                sleep_time,
+            )
             await asyncio.sleep(delay=sleep_time)
 
         # If the user supplied session is None; we create our own and set it to a private
@@ -241,6 +251,7 @@ class UniversalisAPI:
         if self.session is None:
             session = aiohttp.ClientSession()
             self._session = session
+            LOGGER.debug("<%s._request() | Creating local `aiohttp.ClientSession()` | session: %s", __class__.__name__, session)
         else:
             session: aiohttp.ClientSession = self.session
 
@@ -250,6 +261,7 @@ class UniversalisAPI:
         else:
             data = await session.get(url=url, **request_params)
 
+        LOGGER.debug("<%s._request() | Status Code: %s | Content Type: %s", __class__.__name__, data.status, data.content_type)
         if not 200 <= data.status < 300:
             raise UniversalisError(data.status, url, "generic http request")
         if data.status == 400:
@@ -330,7 +342,7 @@ class UniversalisAPI:
             item = str(item)
         # If no datacenter is provided; use the libs Instance default.
         if world_or_dc is None:
-            world_or_dc = self.datacenter
+            world_or_dc = self.default_datacenter
 
         api_url: str = (
             f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={item_quality.value}"
@@ -487,7 +499,7 @@ class UniversalisAPI:
             item = str(item)
 
         if world_or_dc is None:
-            world_or_dc = self.datacenter
+            world_or_dc = self.default_datacenter
 
         api_url: str = (
             f"{self.base_api_url}/history/{world_or_dc.name}/{item}?entriesToReturn={num_listings}"
