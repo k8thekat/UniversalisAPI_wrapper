@@ -1,6 +1,6 @@
 [project]
-name = "UniversalisAPI_wrapper"
-dynamic = ["version", "dependencies"]
+name = "Universalis"
+dynamic = ["version"]
 authors = [{ name = "k8thekat", email = "Cadwalladerkatelynn@gmail.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }
 description = "A bare-bones wrapper package to utilitize Universalis API in python."
@@ -20,17 +20,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 keywords = ["ffxiv", "datamining", "universalis", "garland tools", "api"]
+dependencies = [
+    "aiohttp>=3.12.13",
+]
 
 [project.urls]
 GitHub = "https://github.com/k8thekat/UniversalisAPI_wrapper"
-
-[tool.setuptools]
-packages = ["universalis"]
-include-package-data = true
-
-[tool.setuptools.dynamic]
-dependencies = { file = "requirements.txt" }
-version = { attr = "universalis.__version__" }
 
 [tool.ruff]
 target-version = "py312"
@@ -82,6 +77,13 @@ exclude = ["logs/**", "**/.venv/**", "**/.vscode-server/", "/usr/*"]
 include = ["universalis"]
 useLibraryCodeForTypes = true
 reportIncompatibleMethodOverride = false
+
+[tool.setuptools]
+packages = ["universalis"]
+include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { attr = "universalis.__version__" }
 
 [build-system]
 requires = ["setuptools>=61.0"]
