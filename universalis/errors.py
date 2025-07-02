@@ -1,6 +1,6 @@
 """Copyright (C) 2021-2024 Katelynn Cadwallader.
 
-This file is part of Kuma Kuma.
+This file is part of Universalis API wrapper.
 
 Universalis API wrapper is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -25,8 +25,8 @@ __all__ = ("UniversalisError",)
 LOGGER = logging.getLogger("universalis.errors")
 
 
-class UniversalisError(Exception):
-    def __init__(self, status_code: int, url: str, error_reason: str) -> None:
+class UniversalisError(Exception):  # noqa: D101
+    def __init__(self, status_code: int, url: str, error_reason: str) -> None:  # noqa: D107
         message = "We encountered an error during a request to Universalis in %s. Current URL: %r | Status Code: %s"
         super().__init__(message, error_reason, url, status_code)
         LOGGER.error(message, error_reason, url, status_code)

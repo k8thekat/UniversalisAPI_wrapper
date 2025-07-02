@@ -20,18 +20,7 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, NotRequired, Required, TypedDict
-
-if TYPE_CHECKING:
-    from ._enums import DataCenter, ItemQuality, World
-
-
-class MarketBoardParams(TypedDict, total=False):
-    world_or_dc: DataCenter | World
-    num_listings: int
-    num_history_entries: int
-    item_quality: ItemQuality
-    trim_item_fields: bool
+from typing import NotRequired, Required, TypedDict
 
 
 class ListingMateria(TypedDict):

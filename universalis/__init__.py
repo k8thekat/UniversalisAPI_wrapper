@@ -1,6 +1,6 @@
 """Copyright (C) 2021-2024 Katelynn Cadwallader.
 
-This file is part of Kuma Kuma.
+This file is part of Universalis API Wrapper.
 
 Universalis API wrapper is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "1.2.2"
+__version__ = "1.3.0"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -60,7 +60,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["alpha", "beta", "pre-release", "release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=1, minor=2, revision=2, release_level="development")
+version_info: VersionInfo = VersionInfo(major=1, minor=3, revision=0, release_level="development")
 
 
 __all__ = (
@@ -221,14 +221,14 @@ class UniversalisAPI:
         return res[self.language.name]
 
     async def _request(self, url: str, request_params: Optional[AiohttpRequestOptions] = None) -> Any:
-        LOGGER.debug("<%s._request() | url: %s | user session: %s | req_params: %s ", __class__.__name__, url, self.session, request_params)
+        LOGGER.debug("<%s._request> | url: %s | user session: %s | req_params: %s ", __class__.__name__, url, self.session, request_params)
         # If the user supplied session is None; we create our own and set it to a private
         # attribute so we can close it later, otherwise we will use the user supplied session.
         if self.session is None:
             if self._session is None:
                 session: aiohttp.ClientSession = aiohttp.ClientSession()
                 self._session = session
-                LOGGER.debug("<%s._request() | Creating local `aiohttp.ClientSession()` | session: %s", __class__.__name__, session)
+                LOGGER.debug("<%s._request> | Creating local `aiohttp.ClientSession()` | session: %s", __class__.__name__, session)
             else:
                 session = self._session
         else:
@@ -240,7 +240,7 @@ class UniversalisAPI:
         else:
             data = await session.get(url=url, **request_params)
 
-        LOGGER.debug("<%s._request() | Status Code: %s | Content Type: %s", __class__.__name__, data.status, data.content_type)
+        LOGGER.debug("<%s._request> | Status Code: %s | Content Type: %s", __class__.__name__, data.status, data.content_type)
         if not 200 <= data.status < 300:
             raise UniversalisError(data.status, url, "generic http request")
         if data.status == 400:
@@ -663,11 +663,13 @@ class UniversalisAPI:
     ) -> str:
         """Resolve a camelCase string to snake_case.
 
-        - Adds a `_` before any uppercase char in the `key_name` and then `.lowers()` that uppercase char.
+        .. note::
+            Adds a `_` before any uppercase char in the `key_name` and then calls `.lower()` on the remaining string.
+
 
         .. note::
-            When using the parameter `pre_formatted_keys` here is an example.
-            - "I want to replace `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
+            The parameter `pre_formatted_keys` the dict structure is `key` = "what to replace" and `value` = "replacement".
+            - Example: `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
 
 
         Parameters
@@ -707,12 +709,12 @@ class UniversalisAPI:
                 temp += f"_{e.lower()}"
                 continue
             temp += e
-        LOGGER.debug("<%s.from_camel_case> key_name: %s | Converted: %s", __class__.__name__, key_name, temp)
+        LOGGER.debug("<%s.from_camel_case> | key_name: %s | Converted: %s", __class__.__name__, key_name, temp)
         return temp
 
     async def clean_up(self) -> None:
         """Cleans up any open resources."""
-        LOGGER.debug("<%s.>_clean_up. | Closing open `aiohttp.ClientSession` %s", __class__.__name__, self._session)
+        LOGGER.debug("<%s._clean_up> | Closing open `aiohttp.ClientSession` %s", __class__.__name__, self._session)
         if self._session is not None:
             await self._session.close()
 

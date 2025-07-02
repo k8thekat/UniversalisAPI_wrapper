@@ -79,7 +79,7 @@ useLibraryCodeForTypes = true
 reportIncompatibleMethodOverride = false
 
 [tool.setuptools]
-packages = ["universalis"]
+packages = ["universalis", "universalis/items.json"]
 include-package-data = true
 
 [tool.setuptools.dynamic]
