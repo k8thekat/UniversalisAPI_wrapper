@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "1.3.2"
+__version__ = "1.4.0"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -60,7 +60,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["alpha", "beta", "pre-release", "release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=1, minor=3, revision=2, release_level="development")
+version_info: VersionInfo = VersionInfo(major=1, minor=4, revision=0, release_level="development")
 
 
 __all__ = (
@@ -403,12 +403,11 @@ class UniversalisAPI:
                 query.append(entry)
 
         results: list[CurrentData] = []
-        for _ in range(0, len(query), 100):
+        for idx in range(0, len(query), 100):
             api_url: str = (
-                f"{self.base_api_url}/{world_or_dc.name}/{','.join(query)}?listings={num_listings}"
+                f"{self.base_api_url}/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?listings={num_listings}"
                 f"&entries={num_history_entries}&hq={item_quality.value}"
             )
-
             # If we need/want to trim fields.
             if trim_item_fields:
                 api_url += self.multi_item_fields
@@ -553,9 +552,9 @@ class UniversalisAPI:
             world_or_dc = self.default_datacenter
 
         results: list[HistoryData] = []
-        for _ in range(0, len(query), 100):
+        for idx in range(0, len(query), 100):
             api_url: str = (
-                f"{self.base_api_url}/history/{world_or_dc.name}/{','.join(query)}?entriesToReturn={num_listings}"
+                f"{self.base_api_url}/history/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?entriesToReturn={num_listings}"
                 f"&statsWithin={history}&minSalePrice={min_price}&maxSalePrice={max_price}"
             )
             res: MultiPartData = await self._request(url=api_url)
@@ -766,6 +765,7 @@ class GenericData(Generic):
     """
 
     item_id: int
+    name: Optional[str]
     nq_sale_velocity: float | int
     hq_sale_velocity: float | int
     regular_sale_velocity: float | int
@@ -814,6 +814,9 @@ class CurrentData(GenericData):
     ----------
     item_id: :class:`int`
         The Final Fantasy 14 item ID.
+    name: :class:`Optional[str]`
+        The name of the Final Fantasy 14 Item based on `item_id`, if applicable.
+        - This will use the language set by :class:`UniversalisAPI.language` property.
     listings: :class:`list[CurrentDataEntries]`
         A current-shown listings, sorted by `timestamp`.
     recent_history: :class:`list[HistoryDataEntries]`
@@ -944,6 +947,7 @@ class CurrentData(GenericData):
                 setattr(self, key, bool(value))
             else:
                 setattr(self, key, value)
+        self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
 
     @property
     def listings(self) -> list[CurrentDataEntries]:
@@ -1174,6 +1178,9 @@ class HistoryData(GenericData):
     ----------
     item_id: :class:`int`
         The Final Fantasy 14 Item ID.
+    name: :class:`Optional[str]`
+        The name of the Final Fantasy 14 Item based on `item_id`, if applicable.
+        - This will use the language set by :class:`UniversalisAPI.language` property.
     entries: :class:`list[HistoryDataEntries]`
         The historical sales.
     world_id: :class:`Optional[int]`
@@ -1230,6 +1237,7 @@ class HistoryData(GenericData):
                 self.entries = value
             else:
                 setattr(self, key, value)
+        self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
 
     @property
     def entries(self) -> list[HistoryDataEntries]:
