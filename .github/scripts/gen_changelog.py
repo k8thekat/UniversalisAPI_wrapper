@@ -12,8 +12,8 @@ project_dir: pathlib.Path = pathlib.Path().joinpath(project_name)
 project_branch: str = "development"
 repo_url = f"https://github.com/k8thekat/{gitHub_repo_name}"
 
-# New Repos only.
-_flag: bool = True
+# Initializing a Repo only.
+_flag: bool = False
 
 
 # Grab Version from __init__.py
