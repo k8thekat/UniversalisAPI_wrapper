@@ -64,10 +64,11 @@ class CurrentDCWorld(TypedDict):
     `./universalis_data/data/universalis_api_current_world.json`
     """
 
-    itemID: int
     worldID: NotRequired[int]
-    lastUploadTime: int
+    worldName: NotRequired[str]
     dcName: NotRequired[str]  # DC only
+    itemID: int
+    lastUploadTime: int
     listings: Required[list[CurrentListing]]
     recentHistory: Required[list[CurrentListing]]
     currentAveragePrice: float | int
@@ -89,7 +90,6 @@ class CurrentDCWorld(TypedDict):
     stackSizeHistogramNQ: dict[str, int]
     stackSizeHistogramHQ: dict[str, int]
     worldUploadTimes: dict[str, int]
-    worldName: NotRequired[str]
     listingsCount: int
     recentHistoryCount: int
     unitsForSale: int
@@ -142,6 +142,7 @@ class MultiPartData(TypedDict):
 
     itemIDs: list[int]
     items: dict[str, CurrentDCWorld | HistoryDCWorld]
-    worldID: int
+    worldID: NotRequired[int]
     unresolvedItems: list[int]
-    worldName: str
+    worldName: NotRequired[str]
+    dcName: NotRequired[str]

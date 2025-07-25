@@ -1,5 +1,5 @@
 [project]
-name = "Universalis"
+name = "univeralis"
 dynamic = ["version"]
 authors = [{ name = "k8thekat", email = "Cadwalladerkatelynn@gmail.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -30,6 +30,7 @@ GitHub = "https://github.com/k8thekat/UniversalisAPI_wrapper"
 [tool.ruff]
 target-version = "py312"
 line-length = 140
+exclude = ["*local.py"]
 
 [tool.ruff.lint]
 select = ["ALL"]

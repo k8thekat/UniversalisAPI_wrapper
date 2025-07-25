@@ -1,0 +1,914 @@
+{
+    "itemIDs": [
+        26738,
+        26730
+    ],
+    "items": {
+        "26738": {
+            "itemID": 26738,
+            "lastUploadTime": 1751830376046,
+            "listings": [
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 180,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "15340386543898368",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 1,
+                    "retainerID": "33777097239198619",
+                    "retainerName": "Arisella",
+                    "sellerID": null,
+                    "total": 180,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 181,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556551004299",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 3,
+                    "retainerID": "33777097239812482",
+                    "retainerName": "Wumpscut",
+                    "sellerID": null,
+                    "total": 181,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 182,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "14636699106223760",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 2,
+                    "retainerID": "33777097241147577",
+                    "retainerName": "Liselle-levigne",
+                    "sellerID": null,
+                    "total": 182,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 182,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556552947139",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 2,
+                    "retainerID": "33777097240083528",
+                    "retainerName": "Tiklmehbum",
+                    "sellerID": null,
+                    "total": 182,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 183,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18155136220923660",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 14,
+                    "retainerID": "33777097238033792",
+                    "retainerName": "Chudbo",
+                    "sellerID": null,
+                    "total": 183,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 189,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "19703248436543872",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 4,
+                    "retainerID": "33777097240323553",
+                    "retainerName": "Maxx",
+                    "sellerID": null,
+                    "total": 189,
+                    "tax": 9
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 200,
+                    "quantity": 3,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556551438806",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 1,
+                    "retainerID": "33777097240468206",
+                    "retainerName": "Rochelle",
+                    "sellerID": null,
+                    "total": 600,
+                    "tax": 30
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 200,
+                    "quantity": 5,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556549214060",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 3,
+                    "retainerID": "33777097235433563",
+                    "retainerName": "Chelle",
+                    "sellerID": null,
+                    "total": 1000,
+                    "tax": 50
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 200,
+                    "quantity": 5,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556549214091",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 3,
+                    "retainerID": "33777097235526630",
+                    "retainerName": "Voila",
+                    "sellerID": null,
+                    "total": 1000,
+                    "tax": 50
+                },
+                {
+                    "lastReviewTime": 1751822745,
+                    "pricePerUnit": 250,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Balmung",
+                    "worldID": 91,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "6403556549498411",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 12,
+                    "retainerID": "33777097238027451",
+                    "retainerName": "Velsya",
+                    "sellerID": null,
+                    "total": 250,
+                    "tax": 12
+                }
+            ],
+            "recentHistory": [
+                {
+                    "hq": false,
+                    "pricePerUnit": 267,
+                    "quantity": 1,
+                    "timestamp": 1751823278,
+                    "onMannequin": false,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "buyerName": "Kat Laddish-nacht",
+                    "total": 267
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 250,
+                    "quantity": 2,
+                    "timestamp": 1751823277,
+                    "onMannequin": false,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "buyerName": "Kat Laddish-nacht",
+                    "total": 500
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 240,
+                    "quantity": 1,
+                    "timestamp": 1751823275,
+                    "onMannequin": false,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "buyerName": "Kat Laddish-nacht",
+                    "total": 240
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 167,
+                    "quantity": 3,
+                    "timestamp": 1751823270,
+                    "onMannequin": false,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "buyerName": "Kat Laddish-nacht",
+                    "total": 501
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 1000,
+                    "quantity": 1,
+                    "timestamp": 1751816561,
+                    "onMannequin": false,
+                    "worldName": "Malboro",
+                    "worldID": 75,
+                    "buyerName": "Bjarn Darae",
+                    "total": 1000
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 297,
+                    "quantity": 2,
+                    "timestamp": 1751804889,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "Clovis Underwood",
+                    "total": 594
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 269,
+                    "quantity": 31,
+                    "timestamp": 1751801061,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "Pete Buttigieg",
+                    "total": 8339
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 246,
+                    "quantity": 1,
+                    "timestamp": 1751801060,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "Pete Buttigieg",
+                    "total": 246
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 245,
+                    "quantity": 1,
+                    "timestamp": 1751801059,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "Pete Buttigieg",
+                    "total": 245
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 243,
+                    "quantity": 7,
+                    "timestamp": 1751801058,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "Pete Buttigieg",
+                    "total": 1701
+                }
+            ],
+            "dcName": "Crystal",
+            "currentAveragePrice": 1195.138,
+            "currentAveragePriceNQ": 1195.138,
+            "currentAveragePriceHQ": 0,
+            "regularSaleVelocity": 43,
+            "nqSaleVelocity": 43,
+            "hqSaleVelocity": 0,
+            "averagePrice": 369.875,
+            "averagePriceNQ": 369.875,
+            "averagePriceHQ": 0,
+            "minPrice": 180,
+            "minPriceNQ": 180,
+            "minPriceHQ": 0,
+            "maxPrice": 17999,
+            "maxPriceNQ": 17999,
+            "maxPriceHQ": 0,
+            "stackSizeHistogram": {
+                "1": 52,
+                "2": 14,
+                "3": 4,
+                "5": 3,
+                "6": 1,
+                "7": 1,
+                "8": 2,
+                "10": 2,
+                "11": 1,
+                "12": 1,
+                "25": 1,
+                "34": 1,
+                "37": 1,
+                "43": 1,
+                "53": 1,
+                "99": 1
+            },
+            "stackSizeHistogramNQ": {
+                "1": 52,
+                "2": 14,
+                "3": 4,
+                "5": 3,
+                "6": 1,
+                "7": 1,
+                "8": 2,
+                "10": 2,
+                "11": 1,
+                "12": 1,
+                "25": 1,
+                "34": 1,
+                "37": 1,
+                "43": 1,
+                "53": 1,
+                "99": 1
+            },
+            "stackSizeHistogramHQ": {},
+            "worldUploadTimes": {
+                "34": 1751822778420,
+                "37": 1751828058214,
+                "41": 1751827993496,
+                "62": 1751823155367,
+                "74": 1751751174909,
+                "75": 1751830376046,
+                "81": 1751822885559,
+                "91": 1751822746636
+            },
+            "listingsCount": 10,
+            "recentHistoryCount": 10,
+            "unitsForSale": 20,
+            "unitsSold": 50,
+            "hasData": true
+        },
+        "26730": {
+            "itemID": 26730,
+            "lastUploadTime": 1751831848424,
+            "listings": [
+                {
+                    "lastReviewTime": 1751827922,
+                    "pricePerUnit": 299,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18014398809312960",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 3,
+                    "retainerID": "33777097241205905",
+                    "retainerName": "I'sabelle",
+                    "sellerID": null,
+                    "total": 299,
+                    "tax": 14
+                },
+                {
+                    "lastReviewTime": 1751827922,
+                    "pricePerUnit": 300,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18014398809955284",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 1,
+                    "retainerID": "33777097242554669",
+                    "retainerName": "Zikorrah",
+                    "sellerID": null,
+                    "total": 300,
+                    "tax": 15
+                },
+                {
+                    "lastReviewTime": 1751822695,
+                    "pricePerUnit": 387,
+                    "quantity": 3,
+                    "stainID": 0,
+                    "worldName": "Brynhildr",
+                    "worldID": 34,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "14636699100181812",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 4,
+                    "retainerID": "33777097239585381",
+                    "retainerName": "Bright-eyes",
+                    "sellerID": null,
+                    "total": 1161,
+                    "tax": 58
+                },
+                {
+                    "lastReviewTime": 1751827922,
+                    "pricePerUnit": 467,
+                    "quantity": 42,
+                    "stainID": 0,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "2603643961774647",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 4,
+                    "retainerID": "33777097238502099",
+                    "retainerName": "Zanshin",
+                    "sellerID": null,
+                    "total": 19614,
+                    "tax": 980
+                },
+                {
+                    "lastReviewTime": 1751827550,
+                    "pricePerUnit": 520,
+                    "quantity": 20,
+                    "stainID": 0,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "2885119257205433",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 10,
+                    "retainerID": "33777097239373679",
+                    "retainerName": "Zaphara",
+                    "sellerID": null,
+                    "total": 10400,
+                    "tax": 520
+                },
+                {
+                    "lastReviewTime": 1751827550,
+                    "pricePerUnit": 525,
+                    "quantity": 25,
+                    "stainID": 0,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "2885119256611612",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 12,
+                    "retainerID": "33777097239265908",
+                    "retainerName": "Sebastian-michaelis-",
+                    "sellerID": null,
+                    "total": 13125,
+                    "tax": 656
+                },
+                {
+                    "lastReviewTime": 1751827550,
+                    "pricePerUnit": 540,
+                    "quantity": 2,
+                    "stainID": 0,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18014398809600660",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 2,
+                    "retainerID": "33777097239332429",
+                    "retainerName": "Jerm",
+                    "sellerID": null,
+                    "total": 1080,
+                    "tax": 54
+                },
+                {
+                    "lastReviewTime": 1751827922,
+                    "pricePerUnit": 540,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Mateus",
+                    "worldID": 37,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18155136221961540",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 2,
+                    "retainerID": "33777097241482171",
+                    "retainerName": "Yahir",
+                    "sellerID": null,
+                    "total": 540,
+                    "tax": 27
+                },
+                {
+                    "lastReviewTime": 1751827550,
+                    "pricePerUnit": 544,
+                    "quantity": 1,
+                    "stainID": 0,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "14707067851321675",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 12,
+                    "retainerID": "33777097242089769",
+                    "retainerName": "Luckyy",
+                    "sellerID": null,
+                    "total": 544,
+                    "tax": 27
+                },
+                {
+                    "lastReviewTime": 1751827551,
+                    "pricePerUnit": 545,
+                    "quantity": 25,
+                    "stainID": 0,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "creatorName": "",
+                    "creatorID": null,
+                    "hq": false,
+                    "isCrafted": false,
+                    "listingID": "18155136189318910",
+                    "materia": [
+                        {
+                            "slotID": 0,
+                            "materiaID": 0
+                        }
+                    ],
+                    "onMannequin": false,
+                    "retainerCity": 12,
+                    "retainerID": "33777097241736200",
+                    "retainerName": "Arialla",
+                    "sellerID": null,
+                    "total": 13625,
+                    "tax": 681
+                }
+            ],
+            "recentHistory": [
+                {
+                    "hq": false,
+                    "pricePerUnit": 995,
+                    "quantity": 15,
+                    "timestamp": 1751816682,
+                    "onMannequin": false,
+                    "worldName": "Goblin",
+                    "worldID": 81,
+                    "buyerName": "Raichel Murphy",
+                    "total": 14925
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 3845,
+                    "quantity": 1,
+                    "timestamp": 1751784502,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "John Knee",
+                    "total": 3845
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 3065,
+                    "quantity": 1,
+                    "timestamp": 1751784500,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "John Knee",
+                    "total": 3065
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 3050,
+                    "quantity": 2,
+                    "timestamp": 1751784498,
+                    "onMannequin": false,
+                    "worldName": "Diabolos",
+                    "worldID": 62,
+                    "buyerName": "John Knee",
+                    "total": 6100
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 350,
+                    "quantity": 4,
+                    "timestamp": 1751781634,
+                    "onMannequin": false,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "buyerName": "Suzaku Zaku",
+                    "total": 1400
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 200,
+                    "quantity": 2,
+                    "timestamp": 1751771376,
+                    "onMannequin": false,
+                    "worldName": "Brynhildr",
+                    "worldID": 34,
+                    "buyerName": "Valkrielle Arda",
+                    "total": 400
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 400,
+                    "quantity": 1,
+                    "timestamp": 1751756213,
+                    "onMannequin": false,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "buyerName": "Rocco Tayacho",
+                    "total": 400
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 399,
+                    "quantity": 3,
+                    "timestamp": 1751756211,
+                    "onMannequin": false,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "buyerName": "Rocco Tayacho",
+                    "total": 1197
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 367,
+                    "quantity": 1,
+                    "timestamp": 1751756210,
+                    "onMannequin": false,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "buyerName": "Rocco Tayacho",
+                    "total": 367
+                },
+                {
+                    "hq": false,
+                    "pricePerUnit": 365,
+                    "quantity": 1,
+                    "timestamp": 1751756208,
+                    "onMannequin": false,
+                    "worldName": "Zalera",
+                    "worldID": 41,
+                    "buyerName": "Rocco Tayacho",
+                    "total": 365
+                }
+            ],
+            "dcName": "Crystal",
+            "currentAveragePrice": 3811.5479,
+            "currentAveragePriceNQ": 3811.5479,
+            "currentAveragePriceHQ": 0,
+            "regularSaleVelocity": 30.857143,
+            "nqSaleVelocity": 30.857143,
+            "hqSaleVelocity": 0,
+            "averagePrice": 1077.075,
+            "averagePriceNQ": 1077.075,
+            "averagePriceHQ": 0,
+            "minPrice": 299,
+            "minPriceNQ": 299,
+            "minPriceHQ": 0,
+            "maxPrice": 80000,
+            "maxPriceNQ": 80000,
+            "maxPriceHQ": 0,
+            "stackSizeHistogram": {
+                "1": 87,
+                "2": 18,
+                "3": 12,
+                "4": 4,
+                "5": 6,
+                "6": 3,
+                "7": 1,
+                "8": 1,
+                "10": 6,
+                "14": 1,
+                "20": 2,
+                "25": 2,
+                "26": 1,
+                "42": 1,
+                "43": 1,
+                "48": 1,
+                "50": 1,
+                "55": 1,
+                "77": 1,
+                "80": 1,
+                "97": 1,
+                "99": 5
+            },
+            "stackSizeHistogramNQ": {
+                "1": 87,
+                "2": 18,
+                "3": 12,
+                "4": 4,
+                "5": 6,
+                "6": 3,
+                "7": 1,
+                "8": 1,
+                "10": 6,
+                "14": 1,
+                "20": 2,
+                "25": 2,
+                "26": 1,
+                "42": 1,
+                "43": 1,
+                "48": 1,
+                "50": 1,
+                "55": 1,
+                "77": 1,
+                "80": 1,
+                "97": 1,
+                "99": 5
+            },
+            "stackSizeHistogramHQ": {},
+            "worldUploadTimes": {
+                "34": 1751822709578,
+                "37": 1751827922157,
+                "41": 1751827566787,
+                "62": 1751831848424,
+                "74": 1751818252852,
+                "75": 1751805900483,
+                "81": 1751828924995,
+                "91": 1751806100918
+            },
+            "listingsCount": 10,
+            "recentHistoryCount": 10,
+            "unitsForSale": 121,
+            "unitsSold": 31,
+            "hasData": true
+        }
+    },
+    "dcName": "Crystal",
+    "unresolvedItems": []
+}

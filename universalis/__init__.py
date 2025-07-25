@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "1.4.0"
+__version__ = "2.0.1"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -31,7 +31,6 @@ import datetime
 import json
 import logging
 import pathlib
-import statistics
 from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Self, Union
 
 import aiohttp
@@ -57,10 +56,10 @@ class VersionInfo(NamedTuple):
     major: int
     minor: int
     revision: int
-    release_level: Literal["alpha", "beta", "pre-release", "release", "development"]
+    release_level: Literal["release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=1, minor=4, revision=0, release_level="development")
+version_info: VersionInfo = VersionInfo(major=2, minor=0, revision=1, release_level="development")
 
 
 __all__ = (
@@ -346,7 +345,7 @@ class UniversalisAPI:
         num_history_entries: int = 10,
         item_quality: ItemQuality = ItemQuality.NQ,
         trim_item_fields: bool = False,
-    ) -> list[CurrentData]:
+    ) -> list[CurrentData] | CurrentData:
         """Retrieve a bulk item search of Universalis marketboard data.
 
         Retrieves the data currently shown on the market board for the requested item and world or data center.
@@ -388,12 +387,23 @@ class UniversalisAPI:
 
         Returns
         -------
-        :class:`list[CurrentData]`
+        :class:`list[CurrentData] | CurrentData`
             Returns the JSON response converted into a list of :class:`CurrentData` objects.
+            - Will return a single instance of :class:`CurrentData` if a single entry is found in the `items` parameter.
+
+        Raises
+        ------
+        TypeError
+            If the `items` parameter is of the wrong type.
 
         """
         if world_or_dc is None:
             world_or_dc = self.default_datacenter
+
+        # Not sure if this is needed entirely; but in case someone passes in a wrong data structure.
+        if isinstance(items, (str, int)):
+            msg = "You must provide a value of type <class list[class int]> or <class list[class str]> not <%s>."
+            raise TypeError(msg, type(items))
 
         query: list[str] = []
         for entry in items:
@@ -401,6 +411,18 @@ class UniversalisAPI:
                 query.append(str(entry))
             else:
                 query.append(entry)
+
+        # If we are given a single entry in our list; use the `get_current_data` instead.
+        # We could modify the `join` statement below; but this is far easier and provides the same results.
+        if len(query) == 1:
+            return await self.get_current_data(
+                item=query[0],
+                world_or_dc=world_or_dc,
+                num_listings=num_listings,
+                num_history_entries=num_history_entries,
+                item_quality=item_quality,
+                trim_item_fields=trim_item_fields,
+            )
 
         results: list[CurrentData] = []
         for idx in range(0, len(query), 100):
@@ -413,6 +435,9 @@ class UniversalisAPI:
                 api_url += self.multi_item_fields
 
             res: MultiPartData = await self._request(url=api_url)
+            # If we use a Datacenter, we will have `world_name` and `world_id` inside our Listings(CurrentDataEntries).
+            # If we use a World, it will be at the topmost level(CurrentData) of the results and no where else.
+            # TODO(@k8thekat): - If we have the world keys @CurrentData level, we should pass the value into CurrentDataEntries
             LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
             LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
             results.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
@@ -495,7 +520,7 @@ class UniversalisAPI:
         min_price: int = 0,
         max_price: int = 2147483647,
         history: int = 604800000,
-    ) -> list[HistoryData]:
+    ) -> list[HistoryData] | HistoryData:
         """Retrieve the Universalis marketboard history data for the provided item.
 
         Retrieves the history data for the requested item and world or data center.
@@ -520,7 +545,7 @@ class UniversalisAPI:
 
         Parameters
         ----------
-        items: :class:`str | int`
+        items: :class:`list[str] | list[int]`
             A Final Fantasy 14 item id of int or str type.
         world_or_dc: :class:`DataCenter | World`, optional
             The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
@@ -537,10 +562,21 @@ class UniversalisAPI:
 
         Returns
         -------
-        :class:`HistoryData`
+        :class:`list[HistoryData] | HistoryData`
             The JSON response converted into a list of :class:`HistoryData` objects.
+            - Will return a single instance of :class:`HistoryData` if a single entry is found in the `items` parameter.
+
+        Raises
+        ------
+        TypeError
+            If the `items` parameter is of the wrong type.
 
         """
+        # Not sure if this is needed entirely; but in case someone passes in a wrong data structure.
+        if isinstance(items, (str, int)):
+            msg = "You must provide a value of type <class list[class int]> or <class list[class str]> not <%s>."
+            raise TypeError(msg, type(items))
+
         query: list[str] = []
         for entry in items:
             if isinstance(entry, int):
@@ -551,6 +587,20 @@ class UniversalisAPI:
         if world_or_dc is None:
             world_or_dc = self.default_datacenter
 
+        # If we are given a single entry in our list; use the `get_current_data` instead.
+        # We could modify the `join` statement below; but this is far easier and provides the same results.
+        # So if the `dcName` key exists, we searched by a DataCenter.
+        # otherwise the `worldName` and `worldID` key will exist.
+        if len(query) == 1:
+            return await self.get_history_data(
+                item=query[0],
+                world_or_dc=world_or_dc,
+                num_listings=num_listings,
+                min_price=min_price,
+                max_price=max_price,
+                history=history,
+            )
+
         results: list[HistoryData] = []
         for idx in range(0, len(query), 100):
             api_url: str = (
@@ -558,100 +608,16 @@ class UniversalisAPI:
                 f"&statsWithin={history}&minSalePrice={min_price}&maxSalePrice={max_price}"
             )
             res: MultiPartData = await self._request(url=api_url)
-            LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
-            LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
+            LOGGER.debug(
+                "<%s._get_bulk_current_data>. | URL: %s | DC/World: %s | Num of Items: %s | Response:\n%s",
+                __class__.__name__,
+                api_url,
+                world_or_dc.name,
+                len(items),
+                res,
+            )
             results.extend(HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value)
         return results
-
-    async def get_suggested_price(
-        self,
-        item: int | str,
-        *,
-        world_or_dc: Optional[World | DataCenter] = None,
-        item_quality: ItemQuality = ItemQuality.NQ,
-        num_of_listings: int = 50,
-    ) -> str:
-        """Use current listings and recent history listings to give a "suggestive" price and stack size to sell the item.
-
-        .. note::
-            The information is purely based on the sample size.
-            - So increasing or decreasing the `num_of_listings` parameter can skew the results.
-
-
-        .. note::
-            You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
-
-
-        Parameters
-        ----------
-        item: :class:`int | str`
-            A Final Fantasy 14 item id of int or str type.
-        world_or_dc: :class:`DataCenter | World`, optional
-            The Final Fantasy 14 World or Datacenter to query your results for, by default `<UniversalisAPI>.datacenter`.
-            - The default is a datacenter for the library, `<DataCenter>.Crystal`.
-        item_quality: :class:`ItemQuality`, optional
-            The Item Quality, by default `<ItemQuality>.NQ`.
-        num_of_listings: :class:`int`, optional
-            The number of listings and recent history listings to fetch, by default 50.
-
-        Returns
-        -------
-        :class:`str`
-            A string including the item name, quality, world, sample size, current highest price and lowest price,
-            mean price diff for current and recent history and suggested stack sizing.
-
-        """
-        if isinstance(item, str):
-            item = int(item)
-
-        if world_or_dc is None:
-            world_or_dc = self.default_datacenter
-
-        # Get a bulk of data to check average price/stack and other information to make a suggested price.
-        res: CurrentData = await self.get_current_data(
-            item=item,
-            world_or_dc=world_or_dc,
-            num_listings=num_of_listings,
-            num_history_entries=num_of_listings,
-            item_quality=item_quality,
-        )
-
-        stacksize: int = 0
-        optimal_stacksize: str = "UNK"
-        for k, v in res.stack_size_histogram.items():
-            if v > stacksize:
-                stacksize = v
-                optimal_stacksize = k
-
-        cur_stacksize_mean: float = statistics.mode(data=[entry.quantity for entry in res.listings])
-        history_stacksize_mean: float = statistics.mean(data=[entry.quantity for entry in res.recent_history])
-        # TODO(@k8thekat): - omit exaggerated values that exceed a threshold over the cost?
-        # #(eg. Omit 10mill cost for a 100k item or similar)
-        # ----
-        # Let's sort our listings by highest price first.
-        sorted_cur_listings: list[CurrentDataEntries] = sorted(res.listings, key=lambda x: x.price_per_unit, reverse=True)
-        sorted_history_listings: list[HistoryDataEntries] = sorted(res.recent_history, key=lambda x: x.price_per_unit, reverse=True)
-
-        # Let's get the middle price point
-        cur_price_mean: float = statistics.mean(data=[entry.price_per_unit for entry in sorted_cur_listings])
-        history_price_mean: float = statistics.mean(data=[entry.price_per_unit for entry in sorted_history_listings])
-        # So we have the MEAN values for price and stacksize in terms of current listings and history listings.
-        # Current highest price = sorted_cur_listings[0]
-        # History highest price = sorted_history_listings[0]
-        cur_mean_diff = int(sorted_cur_listings[0].price_per_unit - cur_price_mean)
-        hist_mean_diff = int(sorted_history_listings[0].price_per_unit - history_price_mean)
-
-        temp: list[str] = []
-        # TODO(@k8thekat): Consider creating a class to hold this information and define a `__repr__` method to return these results?
-        temp.extend((
-            f"Price Insight for: {self._get_item(res.item_id)} ({res.item_id}) | Item Quality: {item_quality.name} | World: {world_or_dc.name} | Sample Size: {num_of_listings}",
-            f"- Current Highest Price/Unit: {sorted_cur_listings[0].price_per_unit} | Lowest Price/Unit: {sorted_cur_listings[-1].price_per_unit}",
-            f"- Current Mean Price/Unit: {cur_price_mean} | Price/Unit diff over Mean: {cur_mean_diff} | {cur_mean_diff / sorted_cur_listings[0].price_per_unit % 2 * 100:.2f}%",
-            f"- History Highest Price/Unit: {sorted_history_listings[0].price_per_unit} | Lowest Price/Unit: {sorted_history_listings[-1].price_per_unit}",
-            f"- History Mean Price/Unit: {history_price_mean} | Price/Unit diff oer Mean: {hist_mean_diff} | {hist_mean_diff / sorted_history_listings[0].price_per_unit % 2 * 100:.2f}%",
-            f"- Common stack sizes (Optimal | Current Mean | History Mean): {optimal_stacksize} | {cur_stacksize_mean} | {history_stacksize_mean}",
-        ))
-        return "\n".join(temp)
 
     @staticmethod
     def from_camel_case(
@@ -825,6 +791,8 @@ class CurrentData(GenericData):
         The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable.
     world_name: :class:`Optional[str]`
         The Final Fantasy 14 World name, if applicable.
+    dc_name: :class:`Optional[str]`
+        The Final Fantasy Datacenter name, if applicable.
     nq_sale_velocity: :class:`float | int`
         The average number of NQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first).
         This number will tend to be the same for every item, because the number of shown sales is the same and over the same period.
@@ -938,13 +906,20 @@ class CurrentData(GenericData):
             "recent_history_count",
             "listings",
             "recent_history",
+            "dc_name",
         ]
+        # We get it early here, as the for loop won't set it to `None` if the data isn't there.
+        # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
+        self.world_name = data.get("worldName", None)
+
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
+
             if isinstance(value, list) and key.lower() == "listings":
-                setattr(self, key, value)
+                self.listings = value
+
             elif key.lower() == "has_data" and isinstance(value, int):
-                setattr(self, key, bool(value))
+                self.has_data = bool(value)
             else:
                 setattr(self, key, value)
         self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
@@ -956,7 +931,7 @@ class CurrentData(GenericData):
 
     @listings.setter
     def listings(self, value: list[CurrentListing]) -> None:
-        self._listings: list[CurrentDataEntries] = sorted([CurrentDataEntries(data=entry) for entry in value])
+        self._listings: list[CurrentDataEntries] = sorted([CurrentDataEntries(data=entry, world_name=self.world_name) for entry in value])
 
     @property
     def recent_history(self) -> list[HistoryDataEntries]:
@@ -966,30 +941,6 @@ class CurrentData(GenericData):
     @recent_history.setter
     def recent_history(self, value: list[HistoryEntries]) -> None:
         self._recent_history: list[HistoryDataEntries] = sorted([HistoryDataEntries(data=entry) for entry in value])
-
-    def sort_listings(self, world: Optional[World] = None, *, reverse: bool = False) -> list[CurrentDataEntries]:
-        """Sort the :class:`CurrentData.listings` by price per unit with the cheapest being first.
-
-        Parameters
-        ----------
-        world: :class:`Optional[World]`, optional
-            If you want to filter out just your Final Fantasy 14 World, by default None.
-        reverse: :class:`bool`, optional
-            If you want the "most expensive" price per unit at the start of the array, by default True.
-
-        Returns
-        -------
-        :class:`list[CurrentDataEntries]`
-            A sorted list of :class:`CurrentDataEntries`.
-
-        """
-        if world is not None:
-            return sorted(
-                [entry for entry in self.listings if isinstance(entry.world_name, str) and entry.world_name == world.name],
-                key=lambda x: x.price_per_unit,
-                reverse=reverse,
-            )
-        return sorted(self.listings, key=lambda x: x.price_per_unit, reverse=reverse)
 
 
 class CurrentDataEntries(Generic):
@@ -1069,7 +1020,7 @@ class CurrentDataEntries(Generic):
     _last_review_time: datetime.datetime | int
     _materia: int
 
-    def __init__(self, data: CurrentListing) -> None:
+    def __init__(self, data: CurrentListing, *, world_name: Optional[str] = None) -> None:
         """Build your JSON response :class:`CurrentDataEntries`.
 
         Represents the data from property `<CurrentData>.listings`.
@@ -1078,10 +1029,14 @@ class CurrentDataEntries(Generic):
         ----------
         data: :class:`CurrentKeys`
             The JSON response data as a dict.
+        world_name: :class:`Optional[str]`
+            The Final Fantasy 14 World name, if applicable.
 
         """
         super().__init__(data=data)
         self._repr_keys = ["world_name", "price_per_unit", "quantity", "hq", "materia", "total", "tax"]
+
+        self.world_name = world_name
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"on_mannequin", "is_crafted", "hq"} and isinstance(value, int):
@@ -1231,6 +1186,11 @@ class HistoryData(GenericData):
         super().__init__(data=data)
         self._universalis = universalis
         self._repr_keys = ["world_name", "dc_name", "item_id", "last_upload_time", "entries"]
+
+        # We get it early here, as the for loop won't set it to `None` if the data isn't there.
+        # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
+        self.world_name = data.get("worldName", None)
+
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() == "entries" and isinstance(value, list):
@@ -1246,7 +1206,7 @@ class HistoryData(GenericData):
 
     @entries.setter
     def entries(self, value: list[HistoryEntries]) -> None:
-        self._entries = [HistoryDataEntries(data=entry) for entry in value]
+        self._entries = [HistoryDataEntries(data=entry, world_name=self.world_name) for entry in value]
 
 
 class HistoryDataEntries(Generic):
@@ -1292,7 +1252,7 @@ class HistoryDataEntries(Generic):
     world_id: Optional[int]
     _timestamp: datetime.datetime | int
 
-    def __init__(self, data: HistoryEntries) -> None:
+    def __init__(self, data: HistoryEntries, *, world_name: Optional[str] = None) -> None:
         """Build your JSON response :class:`HistoryDataEntries`.
 
         Represents the data from property `<HistoryData>.entries` and `<CurrentData>.recent_history`.
@@ -1301,10 +1261,14 @@ class HistoryDataEntries(Generic):
         ----------
         data: :class:`HistoryEntries`
             The JSON response data as a dict.
+        world_name: :class:`Optional[str]`
+            The Final Fantasy 14 World name, if applicable.
 
         """
         super().__init__(data=data)
         self._repr_keys = ["world_name", "timestamp", "quantity", "price_per_unit", "hq"]
+        self.world_name = world_name
+
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"hq", "on_mannequin"} and isinstance(value, int):

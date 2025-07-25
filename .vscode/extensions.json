@@ -1,0 +1,23 @@
+{
+	// See https://go.microsoft.com/fwlink/?LinkId=827846 to learn about workspace recommendations.
+	// Extension identifier format: ${publisher}.${name}. Example: vscode.csharp
+	// List of extensions which should be recommended for users of this workspace.
+	"recommendations": [
+		"njpwerner.autodocstring",
+		"streetsidesoftware.code-spell-checker",
+		"tamasfe.even-better-toml",
+		"mohsen1.prettify-json",
+		"ms-python.vscode-pylance",
+		"ms-python.python",
+		"ms-python.vscode-python-envs",
+		"Gruntfuggly.todo-tree",
+		"aaron-bond.better-comments",
+		"lovebird.better-comments-enhanced",
+		"usernamehw.errorlens",
+		"rodolphebarbanneau.python-docstring-highlighter",
+		"jgclark.vscode-todo-highlight",
+		"charliermarsh.ruff"
+	],
+	// List of extensions recommended by VS Code that should not be recommended for users of this workspace.
+	"unwantedRecommendations": []
+}

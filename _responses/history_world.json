@@ -1,0 +1,102 @@
+{
+    "itemID": 10373,
+    "worldID": 41,
+    "lastUploadTime": 1750715470200,
+    "entries": [
+        {
+            "hq": false,
+            "pricePerUnit": 2909,
+            "quantity": 33,
+            "buyerName": "Saelihn Valdi-iriq",
+            "onMannequin": false,
+            "timestamp": 1750707387
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2908,
+            "quantity": 99,
+            "buyerName": "Saelihn Valdi-iriq",
+            "onMannequin": false,
+            "timestamp": 1750707386
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2908,
+            "quantity": 20,
+            "buyerName": "Subs Subs",
+            "onMannequin": false,
+            "timestamp": 1750704068
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2910,
+            "quantity": 99,
+            "buyerName": "Shara Starlight",
+            "onMannequin": false,
+            "timestamp": 1750698809
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2910,
+            "quantity": 99,
+            "buyerName": "Shara Starlight",
+            "onMannequin": false,
+            "timestamp": 1750698808
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2910,
+            "quantity": 99,
+            "buyerName": "Shara Starlight",
+            "onMannequin": false,
+            "timestamp": 1750698796
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2905,
+            "quantity": 99,
+            "buyerName": "Zepp Tal'kesh",
+            "onMannequin": false,
+            "timestamp": 1750692894
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2905,
+            "quantity": 99,
+            "buyerName": "Zepp Tal'kesh",
+            "onMannequin": false,
+            "timestamp": 1750692893
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2235,
+            "quantity": 99,
+            "buyerName": "Zepp Tal'kesh",
+            "onMannequin": false,
+            "timestamp": 1750692892
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2235,
+            "quantity": 99,
+            "buyerName": "Emily Waltz",
+            "onMannequin": false,
+            "timestamp": 1750692205
+        }
+    ],
+    "stackSizeHistogram": {
+        "20": 1,
+        "33": 1,
+        "99": 8
+    },
+    "stackSizeHistogramNQ": {
+        "20": 1,
+        "33": 1,
+        "99": 8
+    },
+    "stackSizeHistogramHQ": {},
+    "regularSaleVelocity": 120.71429,
+    "nqSaleVelocity": 120.71429,
+    "hqSaleVelocity": 0,
+    "worldName": "Zalera"
+}
