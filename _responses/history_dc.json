@@ -1,0 +1,123 @@
+{
+    "itemID": 10373,
+    "lastUploadTime": 1750715470200,
+    "entries": [
+        {
+            "hq": false,
+            "pricePerUnit": 2000,
+            "quantity": 99,
+            "buyerName": "Quinn Zealous",
+            "onMannequin": false,
+            "timestamp": 1750712165,
+            "worldName": "Coeurl",
+            "worldID": 74
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2100,
+            "quantity": 26,
+            "buyerName": "Okami Shroud",
+            "onMannequin": false,
+            "timestamp": 1750710812,
+            "worldName": "Mateus",
+            "worldID": 37
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2089,
+            "quantity": 99,
+            "buyerName": "Sako Uzuka",
+            "onMannequin": false,
+            "timestamp": 1750709666,
+            "worldName": "Brynhildr",
+            "worldID": 34
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2100,
+            "quantity": 99,
+            "buyerName": "Madison Tehp",
+            "onMannequin": false,
+            "timestamp": 1750709278,
+            "worldName": "Coeurl",
+            "worldID": 74
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2100,
+            "quantity": 99,
+            "buyerName": "Madison Tehp",
+            "onMannequin": false,
+            "timestamp": 1750709276,
+            "worldName": "Coeurl",
+            "worldID": 74
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 1995,
+            "quantity": 99,
+            "buyerName": "Mia Sasano",
+            "onMannequin": false,
+            "timestamp": 1750708031,
+            "worldName": "Balmung",
+            "worldID": 91
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2909,
+            "quantity": 33,
+            "buyerName": "Saelihn Valdi-iriq",
+            "onMannequin": false,
+            "timestamp": 1750707387,
+            "worldName": "Zalera",
+            "worldID": 41
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2908,
+            "quantity": 99,
+            "buyerName": "Saelihn Valdi-iriq",
+            "onMannequin": false,
+            "timestamp": 1750707386,
+            "worldName": "Zalera",
+            "worldID": 41
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2150,
+            "quantity": 50,
+            "buyerName": "Taliyah Sitra",
+            "onMannequin": false,
+            "timestamp": 1750706842,
+            "worldName": "Diabolos",
+            "worldID": 62
+        },
+        {
+            "hq": false,
+            "pricePerUnit": 2125,
+            "quantity": 50,
+            "buyerName": "Taliyah Sitra",
+            "onMannequin": false,
+            "timestamp": 1750706841,
+            "worldName": "Diabolos",
+            "worldID": 62
+        }
+    ],
+    "dcName": "Crystal",
+    "stackSizeHistogram": {
+        "26": 1,
+        "33": 1,
+        "50": 2,
+        "99": 6
+    },
+    "stackSizeHistogramNQ": {
+        "26": 1,
+        "33": 1,
+        "50": 2,
+        "99": 6
+    },
+    "stackSizeHistogramHQ": {},
+    "regularSaleVelocity": 107.57143,
+    "nqSaleVelocity": 107.57143,
+    "hqSaleVelocity": 0
+}

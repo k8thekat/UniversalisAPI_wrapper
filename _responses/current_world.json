@@ -1,0 +1,101 @@
+{
+    "itemID": 4850,
+    "worldID": 41,
+    "lastUploadTime": 1744339868209,
+    "listings": [
+        {
+            "lastReviewTime": 1744339868,
+            "pricePerUnit": 35,
+            "quantity": 47,
+            "stainID": 0,
+            "creatorName": "",
+            "creatorID": null,
+            "hq": false,
+            "isCrafted": false,
+            "listingID": "2885119233511183",
+            "materia": [],
+            "onMannequin": false,
+            "retainerCity": 3,
+            "retainerID": "33777097243186440",
+            "retainerName": "Xsifx",
+            "sellerID": null,
+            "total": 1645,
+            "tax": 82
+        },
+        {
+            "lastReviewTime": 1744339868,
+            "pricePerUnit": 200,
+            "quantity": 2,
+            "stainID": 0,
+            "creatorName": "",
+            "creatorID": null,
+            "hq": false,
+            "isCrafted": false,
+            "listingID": "2885119240639672",
+            "materia": [],
+            "onMannequin": false,
+            "retainerCity": 1,
+            "retainerID": "33777097242428552",
+            "retainerName": "Jobvichnikov",
+            "sellerID": null,
+            "total": 400,
+            "tax": 20
+        }
+    ],
+    "recentHistory": [
+        {
+            "hq": false,
+            "pricePerUnit": 200,
+            "quantity": 2,
+            "timestamp": 1744311741,
+            "onMannequin": false,
+            "buyerName": "Belle Kalensi",
+            "total": 400
+        },
+        {
+            "hq": true,
+            "pricePerUnit": 200,
+            "quantity": 6,
+            "timestamp": 1744310715,
+            "onMannequin": false,
+            "buyerName": "Scarlet Hazakura",
+            "total": 1200
+        }
+    ],
+    "currentAveragePrice": 143129.58,
+    "currentAveragePriceNQ": 250183.75,
+    "currentAveragePriceHQ": 390.66666,
+    "regularSaleVelocity": 1.1428572,
+    "nqSaleVelocity": 0.2857143,
+    "hqSaleVelocity": 0.85714287,
+    "averagePrice": 200,
+    "averagePriceNQ": 200,
+    "averagePriceHQ": 200,
+    "minPrice": 35,
+    "minPriceNQ": 35,
+    "minPriceHQ": 222,
+    "maxPrice": 999999,
+    "maxPriceNQ": 999999,
+    "maxPriceHQ": 500,
+    "stackSizeHistogram": {
+        "1": 3,
+        "2": 2,
+        "4": 1,
+        "47": 1
+    },
+    "stackSizeHistogramNQ": {
+        "1": 1,
+        "2": 2,
+        "47": 1
+    },
+    "stackSizeHistogramHQ": {
+        "1": 2,
+        "4": 1
+    },
+    "worldName": "Zalera",
+    "listingsCount": 2,
+    "recentHistoryCount": 2,
+    "unitsForSale": 49,
+    "unitsSold": 8,
+    "hasData": true
+}
