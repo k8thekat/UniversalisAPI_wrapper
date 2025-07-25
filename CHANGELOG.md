@@ -1,3 +1,8 @@
+# Version - 2.0.1 - [5719619](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/5719619)
+## Overall
+Merge branch 'development' of https://github.com/k8thekat/UniversalisAPI_wrapper into development
+- Changed `init repo` flag to False.
+
 # Version - 2.0.0 - [92f0bc6](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/92f0bc6)
 ## Overall
 - Removed two functions as they were out of scope for the library.
