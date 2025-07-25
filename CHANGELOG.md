@@ -1,3 +1,8 @@
+# Version - 2.0.2-dev - [8c8641a](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/8c8641a)
+## Failure to build.
+- Fixed typo in pyproject.toml.
+- Cleaned up changelog.
+
 # Version - 2.0.1 - [5719619](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/5719619)
 ## Overall
 Merge branch 'development' of https://github.com/k8thekat/UniversalisAPI_wrapper into development
