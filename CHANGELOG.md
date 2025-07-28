@@ -1,3 +1,8 @@
+# Version - 3.0.0-dev - [f7aa97a](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/f7aa97a)
+## Pypi release
+- Changed project naming to `async_universalis`.
+- Updated relevant files.
+
 # Version - 2.0.2-dev - [8c8641a](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/8c8641a)
 ## Failure to build.
 - Fixed typo in pyproject.toml.
