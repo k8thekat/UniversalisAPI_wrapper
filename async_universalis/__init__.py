@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "2.0.2-dev"
+__version__ = "3.0.0-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -35,7 +35,7 @@ from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Self, Unio
 
 import aiohttp
 
-from universalis._enums import Language
+from async_universalis._enums import Language
 
 from ._enums import *
 from .errors import UniversalisError
@@ -59,7 +59,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=2, minor=0, revision=2, release_level="development")
+version_info: VersionInfo = VersionInfo(major=3, minor=0, revision=0, release_level="development")
 
 
 __all__ = (

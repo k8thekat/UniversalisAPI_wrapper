@@ -1,5 +1,5 @@
 [project]
-name = "universalis"
+name = "async_universalis"
 dynamic = ["version"]
 authors = [{ name = "k8thekat", email = "Cadwalladerkatelynn@gmail.com" }]
 readme = { file = "README.md", content-type = "text/markdown" }
@@ -19,7 +19,7 @@ classifiers = [
     "Topic :: Utilities",
     "Typing :: Typed",
 ]
-keywords = ["ffxiv", "datamining", "universalis", "garland tools", "api"]
+keywords = ["ffxiv", "datamining", "universalis", "api"]
 dependencies = [
     "aiohttp>=3.12.13",
 ]
@@ -75,16 +75,16 @@ venv = ".venv"
 typeCheckingMode = "strict"
 pythonVersion = "3.12"
 exclude = ["logs/**", "**/.venv/**", "**/.vscode-server/", "/usr/*"]
-include = ["universalis"]
+include = ["async_universalis"]
 useLibraryCodeForTypes = true
 reportIncompatibleMethodOverride = false
 
 [tool.setuptools]
-packages = ["universalis"]
+packages = ["async_universalis"]
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = { attr = "universalis.__version__" }
+version = { attr = "async_universalis.__version__" }
 
 [build-system]
 requires = ["setuptools>=61.0"]

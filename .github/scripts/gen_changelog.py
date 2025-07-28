@@ -7,7 +7,7 @@ import re
 # Unique information for the project.
 user = "k8thekat"
 gitHub_repo_name: str = "UniversalisAPI_wrapper"
-project_name: str = "universalis"
+project_name: str = "async_universalis"
 project_dir: pathlib.Path = pathlib.Path().joinpath(project_name)
 project_branch: str = "development"
 repo_url = f"https://github.com/k8thekat/{gitHub_repo_name}"
