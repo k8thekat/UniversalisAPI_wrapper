@@ -1,3 +1,7 @@
+# Version - 3.0.1-dev - [a19bc92](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/a19bc92)
+## Fixed package data.
+- Forgot to update directory.
+
 # Version - 3.0.0-dev - [f7aa97a](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/f7aa97a)
 ## Pypi release
 - Changed project naming to `async_universalis`.
