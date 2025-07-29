@@ -1,3 +1,7 @@
+# Version - 3.0.2-dev - [091437d](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/091437d)
+## Manifest path issue.
+- Missing package files.
+
 # Version - 3.0.1-dev - [a19bc92](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/a19bc92)
 ## Fixed package data.
 - Forgot to update directory.
