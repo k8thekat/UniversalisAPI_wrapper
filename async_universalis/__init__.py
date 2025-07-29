@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "3.0.1-dev"
+__version__ = "3.0.2-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -59,7 +59,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=3, minor=0, revision=1, release_level="development")
+version_info: VersionInfo = VersionInfo(major=3, minor=0, revision=2, release_level="development")
 
 
 __all__ = (
