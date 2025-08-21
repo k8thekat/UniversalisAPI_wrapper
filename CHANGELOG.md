@@ -1,3 +1,14 @@
+# Version - 4.0.0-dev - [9cd794b](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/9cd794b)
+## Development Release: Updated data structure for bulk searching.
+- Bulk Item searching was keyed into the resulting items not allowing users to access `unresolved_items`.
+	- Added a new data structure. `MultiPart` which houses the entire response.
+- Added formatting to currency's and counts.
+- Moved sample code to a separate file.
+- Updated attributes that are printed via __str__() and __repr__() for `HistoryData` and `CurrentData`.
+
+## # Issues
+- Fixed path issue in `settings.json` for Numpy template.
+
 # Version - 3.0.2-dev - [091437d](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/091437d)
 ## Manifest path issue.
 - Missing package files.
