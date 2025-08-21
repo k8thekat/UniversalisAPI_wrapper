@@ -1,356 +1,20 @@
-#type: ignore
 import argparse
 import asyncio
 import json
 import logging
+from logging.handlers import TimedRotatingFileHandler
+import datetime
 from argparse import Namespace
 from pathlib import Path
 from time import time
-from typing import Any
+from typing import Any, ClassVar, Optional
+from configparser import ConfigParser
+import sys
+import subprocess
 
-import aiohttp
+from async_universalis import  CurrentData, HistoryData, ItemQuality, UniversalisAPI, MultiPart, DataCenter, World
 
-from universalis import  CurrentData, CurrentDataEntries,  HistoryData, ItemQuality, UniversalisAPI, World
-
-local_data_path: Path = Path(__file__).parent.joinpath("moogle_intuition")
-items = [
-    "4551",
-    "5702",
-    "5707",
-    "5712",
-    "5703",
-    "5708",
-    "5713",
-    "18025",
-    "18026",
-    "18027",
-    "25194",
-    "25195",
-    "25196",
-    "26735",
-    "26736",
-    "26737",
-    "33925",
-    "33926",
-    "33927",
-    "33938",
-    "33939",
-    "33940",
-    "41765",
-    "41766",
-    "41767",
-    "10336",
-    "12667",
-    "28724",
-    "25062",
-    "25066",
-    "24518",
-    "24520",
-    "24521",
-    "26554",
-    "21281",
-    "27303",
-    "27304",
-    "27305",
-    "16734",
-    "16735",
-    "15652",
-    "5339",
-    "14142",
-    "14143",
-    "14144",
-    "14145",
-    "14937",
-    "12886",
-    "12905",
-    "12906",
-    "12907",
-    "12931",
-    "12932",
-    "12933",
-    "12934",
-    "12935",
-    "12633",
-    "15945",
-    "16907",
-    "16906",
-    "17574",
-    "19840",
-    "19876",
-    "21089",
-    "21301",
-    "21082",
-    "22438",
-    "22439",
-    "22446",
-    "23181",
-    "24281",
-    "24282",
-    "31320",
-    "29661",
-    "29662",
-    "29663",
-    "29664",
-    "29665",
-    "29666",
-    "29667",
-    "29668",
-    "31117",
-    "31118",
-    "31119",
-    "31120",
-    "31121",
-    "31122",
-    "31123",
-    "31124",
-    "31758",
-    "31759",
-    "31760",
-    "31761",
-    "31762",
-    "31763",
-    "31764",
-    "31765",
-    "33186",
-    "33187",
-    "33188",
-    "33189",
-    "33190",
-    "33191",
-    "33192",
-    "33193",
-    "27844",
-    "27845",
-    "27846",
-    "27847",
-    "27848",
-    "28718",
-    "29507",
-    "29508",
-    "29509",
-    "29510",
-    "29511",
-    "31908",
-    "31909",
-    "31910",
-    "31911",
-    "31912",
-    "39595",
-    "36099",
-    "36100",
-    "36101",
-    "36102",
-    "36103",
-    "37284",
-    "38271",
-    "38272",
-    "38273",
-    "38274",
-    "38275",
-    "39864",
-    "39865",
-    "39866",
-    "39867",
-    "39868",
-    "16734",
-    "16735",
-    "15652",
-    "5339",
-    "14142",
-    "14143",
-    "14144",
-    "14145",
-    "14937",
-    "12886",
-    "12905",
-    "12906",
-    "12907",
-    "12931",
-    "12932",
-    "12933",
-    "12934",
-    "12935",
-    "12633",
-    "8155",
-    "8150",
-    "15945",
-    "16907",
-    "16906",
-    "17574",
-    "12839",
-    "19840",
-    "19876",
-    "21089",
-    "21301",
-    "21082",
-    "22438",
-    "22439",
-    "22446",
-    "23181",
-    "24281",
-    "24282",
-    "31320",
-    "33186",
-    "33187",
-    "33188",
-    "33189",
-    "33190",
-    "33191",
-    "33192",
-    "33193",
-    "27844",
-    "27845",
-    "27846",
-    "27847",
-    "27848",
-    "28718",
-    "29507",
-    "29508",
-    "29509",
-    "29510",
-    "29511",
-    "31908",
-    "31909",
-    "31910",
-    "31911",
-    "31912",
-    "10336",
-    "28724",
-    "12667",
-    "26554",
-    "21281",
-    "25062",
-    "25066",
-    "24518",
-    "24520",
-    "24521",
-    "27303",
-    "27304",
-    "27305",
-    "45002",
-    "5702",
-    "5707",
-    "5712",
-    "5703",
-    "5708",
-    "5713",
-    "18025",
-    "18026",
-    "18027",
-    "25194",
-    "25195",
-    "25196",
-    "26735",
-    "26736",
-    "26737",
-    "33925",
-    "33926",
-    "33927",
-    "33938",
-    "33939",
-    "33940",
-    "41765",
-    "41766",
-    "41767",
-    "38715",
-    "38716",
-    "38717",
-    "38718",
-    "38719",
-    "38720",
-    "38721",
-    "38722",
-    "38748",
-    "38749",
-    "38750",
-    "38751",
-    "38752",
-    "38753",
-    "38754",
-    "38755",
-    "39765",
-    "39766",
-    "39767",
-    "39768",
-    "39769",
-    "39770",
-    "39771",
-    "39772",
-    "41246",
-    "41247",
-    "41248",
-    "41249",
-    "41250",
-    "41251",
-    "41252",
-    "41253",
-    "29661",
-    "29662",
-    "29663",
-    "29664",
-    "29665",
-    "29666",
-    "29667",
-    "29668",
-    "31117",
-    "31118",
-    "31119",
-    "31120",
-    "31121",
-    "31122",
-    "31123",
-    "31124",
-    "31758",
-    "31759",
-    "31760",
-    "31761",
-    "31762",
-    "31763",
-    "31764",
-    "31765",
-]
-
-
-async def sample() -> None:
-    item_id = 14  # Fire Cluster
-    # You only need to pass in a aiohttp.ClientSession if
-    # you already have one you are using elsewhere in your code base or have a Pool/etc..
-    session = aiohttp.ClientSession()
-    market = UniversalisAPI(session=session)
-
-    # You are able to limit the number of listings and history results by setting
-    # "num_history" or "num_listing".
-    entries = 50
-
-    # You can filter the data prior by only getting a specific Final Fantasy 14 World
-    # By default it will search an entire Datacenter which can be accessed via `<UniversalisAPI>.default_datacenter`
-    # Or you can pass a WorldEnum object as the `world_or_dc` parameter.
-    world = World.Zalera
-    cur_data: CurrentData = await market.get_current_data(
-        item=item_id,
-        num_history_entries=entries,
-        num_listings=entries,
-        world_or_dc=world,
-    )
-
-    # Maybe you want the single cheapest listing, simple call `sort_listings` and get the first entry.
-    sorted_list: list[CurrentDataEntries] = cur_data.sort_listings()
-    cheapest: CurrentDataEntries = sorted_list[0]
-    # Then the most expensive listing would be at the end.
-    # Example: expensive: CurrentDataEntries = sorted_list[-1]
-    # CurrentDataEntries has a pre-defined `__repr__()` and `__str__()`` to return useful attributes if desired.
-    print(cheapest.world_name, cheapest.price_per_unit, cheapest.quantity)
-    # or
-    # print(cheapest)
-
-    # You can also get the most expensive entry by setting
-    # the reverse parameter to "True". Thus flipping the order of the listings.
-    sorted_list = cur_data.sort_listings(reverse=True)
-    expensive: CurrentDataEntries = sorted_list[0]
-    print(expensive)
-
-
-local_data_path: Path = Path(__file__).parent.joinpath("")
+local_data_path: Path = Path(__file__).parent.joinpath("local_data")
 response_path: Path = Path(__file__).parent.joinpath("garlandtools/_responses")
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
@@ -358,9 +22,23 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 async def local_test() -> None:
     stime = time()
     # item_id = 10373 # magitek repair materials
+    items = [1, 10373]
     async with UniversalisAPI() as market:
-        res = await market.get_current_data(item=10373)
-        print(res)
+        res: CurrentData | MultiPart | None = await market.get_bulk_current_data(items, world_or_dc=World.Zalera)
+        if isinstance(res, CurrentData):
+            "Current Data response."
+            print(res.listings)
+        elif isinstance(res, MultiPart):
+            print("Unresolved", res.unresolved_items)
+            print()
+            print(res)
+            print()
+            print(res.resolved_items[0])
+            print()
+            if isinstance(res.resolved_items[0], CurrentData):
+                print(res.resolved_items[0].listings[0])
+        else:
+            print("Failed", type(res))
 
     LOGGER.info("Completed local_test() in %s seconds...", format(time() - stime, ".3f"))
     return
@@ -535,7 +213,7 @@ _parser.add_argument("--upgrade", help="Run `uv sync -n --upgrade-package packag
 # group: argparse._MutuallyExclusiveGroup = _parser.add_mutually_exclusive_group(required=False)
 _parser.add_argument("-info", help="Set the logging level to `INFO`.", default=False, required=False, action="store_true")
 _parser.add_argument("-debug", help="Set the logging level to `INFO`.", default=False, required=False, action="store_true")
-_parsed_args: Launcher = _parser.parse_known_args()[0]
+_parsed_args: Launcher = _parser.parse_known_args()[0] # pyright: ignore[reportAssignmentType]
 
 # Logging section.
 LOGGER.name = "Local Logging - "

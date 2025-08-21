@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "3.0.2-dev"
+__version__ = "4.0.0-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -31,7 +31,7 @@ import datetime
 import json
 import logging
 import pathlib
-from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Self, Union
+from typing import TYPE_CHECKING, Any, Literal, NamedTuple, Optional, Self, Union, Unpack
 
 import aiohttp
 
@@ -43,8 +43,9 @@ from .errors import UniversalisError
 if TYPE_CHECKING:
     import types
 
-    from _types import *
     from aiohttp.client import _RequestOptions as AiohttpRequestOptions  # pyright: ignore[reportPrivateUsage]
+
+    from ._types import *
 
     DataTypedAliase = Union[CurrentListing, CurrentDCWorld, HistoryDCWorld, HistoryEntries]
 
@@ -345,7 +346,7 @@ class UniversalisAPI:
         num_history_entries: int = 10,
         item_quality: ItemQuality = ItemQuality.NQ,
         trim_item_fields: bool = False,
-    ) -> list[CurrentData] | CurrentData:
+    ) -> CurrentData | MultiPart | None:
         """Retrieve a bulk item search of Universalis marketboard data.
 
         Retrieves the data currently shown on the market board for the requested item and world or data center.
@@ -424,7 +425,8 @@ class UniversalisAPI:
                 trim_item_fields=trim_item_fields,
             )
 
-        results: list[CurrentData] = []
+        # results: list[CurrentData] = []
+        data: Optional[MultiPart] = None
         for idx in range(0, len(query), 100):
             api_url: str = (
                 f"{self.base_api_url}/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?listings={num_listings}"
@@ -435,13 +437,16 @@ class UniversalisAPI:
                 api_url += self.multi_item_fields
 
             res: MultiPartData = await self._request(url=api_url)
-            # If we use a Datacenter, we will have `world_name` and `world_id` inside our Listings(CurrentDataEntries).
-            # If we use a World, it will be at the topmost level(CurrentData) of the results and no where else.
-            # TODO(@k8thekat): - If we have the world keys @CurrentData level, we should pass the value into CurrentDataEntries
             LOGGER.debug("<%s._get_bulk_current_data>. | DC/World: %s | Num of Items: %s", __class__.__name__, world_or_dc.name, len(items))
             LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
-            results.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
-        return results
+
+            # results.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
+            data = MultiPart(
+                universalis=self,
+                resolved_items=[CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value],
+                **res,
+            )
+        return data
 
     async def get_history_data(
         self,
@@ -520,7 +525,7 @@ class UniversalisAPI:
         min_price: int = 0,
         max_price: int = 2147483647,
         history: int = 604800000,
-    ) -> list[HistoryData] | HistoryData:
+    ) -> HistoryData | MultiPart | None:
         """Retrieve the Universalis marketboard history data for the provided item.
 
         Retrieves the history data for the requested item and world or data center.
@@ -601,7 +606,8 @@ class UniversalisAPI:
                 history=history,
             )
 
-        results: list[HistoryData] = []
+        # results: list[HistoryData] = []
+        data: Optional[MultiPart] = None
         for idx in range(0, len(query), 100):
             api_url: str = (
                 f"{self.base_api_url}/history/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?entriesToReturn={num_listings}"
@@ -616,8 +622,13 @@ class UniversalisAPI:
                 len(items),
                 res,
             )
-            results.extend(HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value)
-        return results
+            # results.extend(HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value)
+            data = MultiPart(
+                universalis=self,
+                resolved_items=[HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value],
+                **res,
+            )
+        return data
 
     @staticmethod
     def from_camel_case(
@@ -702,9 +713,9 @@ class Generic:
     world_name: Optional[str]
     # This value only exists if you look up results by "Datacenter" instead of "World"
     dc_name: Optional[str]
-    _raw: DataTypedAliase
+    _raw: DataTypedAliase | MultiPartData
 
-    def __init__(self, data: DataTypedAliase) -> None:
+    def __init__(self, data: DataTypedAliase | MultiPartData) -> None:
         LOGGER.debug("<%s.__init__()> data: %s", __class__.__name__, data)
         self._raw = data
 
@@ -904,10 +915,11 @@ class CurrentData(GenericData):
             "min_price",
             "listings_count",
             "recent_history_count",
-            "listings",
-            "recent_history",
+            # "listings", # !This floods any prints.
+            # "recent_history", # !This floods any prints.
             "dc_name",
         ]
+
         # We get it early here, as the for loop won't set it to `None` if the data isn't there.
         # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
         self.world_name = data.get("worldName", None)
@@ -918,8 +930,13 @@ class CurrentData(GenericData):
             if isinstance(value, list) and key.lower() == "listings":
                 self.listings = value
 
+            # This should handle price formatting.
+            elif "price" in key.lower() and (isinstance(value, (int, float))):
+                setattr(self, key, f"{round(value):,d}")
+
             elif key.lower() == "has_data" and isinstance(value, int):
                 self.has_data = bool(value)
+
             else:
                 setattr(self, key, value)
         self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
@@ -935,7 +952,7 @@ class CurrentData(GenericData):
 
     @property
     def recent_history(self) -> list[HistoryDataEntries]:
-        """The currently-shown sales, sorted by `timestamp`."""
+        """The most recent sales, sorted by `timestamp`."""
         return self._recent_history
 
     @recent_history.setter
@@ -1041,6 +1058,11 @@ class CurrentDataEntries(Generic):
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"on_mannequin", "is_crafted", "hq"} and isinstance(value, int):
                 setattr(self, key, bool(value))
+
+            # This should handle price formatting.
+            elif isinstance(value, (int, float)) and ("price" in key.lower() or key.lower() == "total" or key.lower() == "tax"):
+                setattr(self, key, f"{round(value):,d}")
+
             else:
                 setattr(self, key, value)
 
@@ -1185,7 +1207,7 @@ class HistoryData(GenericData):
         """
         super().__init__(data=data)
         self._universalis = universalis
-        self._repr_keys = ["world_name", "dc_name", "item_id", "last_upload_time", "entries"]
+        self._repr_keys = ["world_name", "dc_name", "item_id", "last_upload_time"]  # "entries" - Removed to prevent flooding the console.
 
         # We get it early here, as the for loop won't set it to `None` if the data isn't there.
         # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
@@ -1195,6 +1217,9 @@ class HistoryData(GenericData):
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() == "entries" and isinstance(value, list):
                 self.entries = value
+            # This should handle price formatting.
+            elif isinstance(value, (int, float)) and "velocity" in key:
+                setattr(self, key, f"{round(value):,d}")
             else:
                 setattr(self, key, value)
         self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
@@ -1273,6 +1298,10 @@ class HistoryDataEntries(Generic):
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"hq", "on_mannequin"} and isinstance(value, int):
                 setattr(self, key, bool(value))
+
+            # This should handle price formatting.
+            elif isinstance(value, (int, float)) and "price" in key:
+                setattr(self, key, f"{round(value):,d}")
             else:
                 setattr(self, key, value)
 
@@ -1331,3 +1360,49 @@ class HistoryDataEntries(Generic):
             self._timestamp = datetime.datetime.fromtimestamp(timestamp=value, tz=datetime.UTC)
         except ValueError:
             self._timestamp = value
+
+
+class MultiPart(Generic):
+    """A represensation of a Universalis API response.
+
+    Attributes
+    ----------
+    items: :class:`list[HistoryData  |  CurrentData]`
+        A list of either :class:`HistoryData` or :class:`CurrentData`.
+    raw_items: :class:`dict[str, CurrentDCWorld  |  HistoryDCWorld]`
+        The JSON response data for each item in `<MultiPartData>.items`.
+    item_ids: :class:`list[int]`
+        The list of item IDs.
+    unresolved_items: :class:`list[int]`
+        The list of unresolved item IDs.
+
+    """
+
+    items: list[HistoryData | CurrentData]
+    raw_items: dict[str, CurrentDCWorld | HistoryDCWorld]
+    item_ids: list[int]
+    unresolved_items: list[int]
+
+    __slots__ = ["item_ids", "items", "resolved_items", "unresolved_items"]
+
+    def __init__(self, universalis: UniversalisAPI, resolved_items: list[HistoryData | CurrentData], **data: Unpack[MultiPartData]) -> None:
+        """Build your JSON response :class:`MultiPart`.
+
+        Parameters
+        ----------
+        universalis: :class:`UniversalisAPI`
+            A reference to the :class:`UniversalisAPI` object.
+        resolved_items: :class:`list[HistoryData  |  CurrentData]`
+            The data set built from `<MultiPartData>.items` as a list of either :class:`HistoryData` or :class:`CurrentData`.
+        **data: :class:`MultiPartData`
+            The JSON response data as a dict.
+
+        """
+        super().__init__(data=data)
+        self._universalis: UniversalisAPI = universalis
+        self._repr_keys = ["item_ids", "unresolved_items"]
+
+        self.item_ids = data["itemIDs"]
+        self.unresolved_items = data["unresolvedItems"]
+        self.raw_items = data["items"]
+        self.items = resolved_items
