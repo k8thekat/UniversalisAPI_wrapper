@@ -1,3 +1,7 @@
+# Version - 4.0.1-dev - [28136d2](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/28136d2)
+##Changelog generation code formatting typo.
+
+
 # Version - 4.0.0-dev - [9cd794b](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/9cd794b)
 ## Development Release: Updated data structure for bulk searching.
 - Bulk Item searching was keyed into the resulting items not allowing users to access `unresolved_items`.
