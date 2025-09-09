@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "4.0.1-dev"
+__version__ = "4.0.2-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -241,14 +241,6 @@ class UniversalisAPI:
             data = await session.get(url=url, **request_params)
 
         LOGGER.debug("<%s._request> | Status Code: %s | Content Type: %s", __class__.__name__, data.status, data.content_type)
-        if not 200 <= data.status < 300:
-            raise UniversalisError(data.status, url, "generic http request")
-        if data.status == 400:
-            raise UniversalisError(
-                data.status,
-                url,
-                "invalid parameters",
-            )
         # 404 - The world/DC or item requested is invalid. When requesting multiple items at once, an invalid item ID will not trigger this.
         # Instead, the returned list of unresolved item IDs will contain the invalid item ID or IDs.
         if data.status == 404:
@@ -257,7 +249,14 @@ class UniversalisAPI:
                 url,
                 "invalid World/DC or Item ID",
             )
-
+        if data.status == 400:
+            raise UniversalisError(
+                data.status,
+                url,
+                "invalid parameters",
+            )
+        if not 200 <= data.status < 300:
+            raise UniversalisError(data.status, url, "generic http request")
         self.api_call_time = datetime.datetime.now(datetime.UTC)
         res: Any = await data.json()
         return res
@@ -284,11 +283,11 @@ class UniversalisAPI:
 
 
         .. note::
-            - If you specify a `<World>`.
+            - If you specify a :class:`World` when getting marketboard data..
                 - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
-            - If you specify a `<DataCenter>`.
+            - If you specify a :class:`DataCenter` when getting marketboard data...
                 - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
-                - `<CurrentData>` will also have an additional attribute called `dc_name`.
+                - :class:`CurrentData` will also have an additional attribute called `dc_name`.
 
         .. note::
             You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
@@ -359,11 +358,11 @@ class UniversalisAPI:
             - See `https://docs.universalis.app/` and use their forms to generate a string with the fields you want.
 
         .. note::
-            - If you specify a `<World>`.
+            - If you specify a :class:`World` when getting marketboard data..
                 - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
-            - If you specify a `<DataCenter>`.
+            - If you specify a :class:`DataCenter` when getting marketboard data...
                 - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
-                - `<CurrentData>` will also have an additional attribute called `dc_name`.
+                - :class:`CurrentData` will also have an additional attribute called `dc_name`.
 
 
         .. note::
@@ -441,11 +440,18 @@ class UniversalisAPI:
             LOGGER.debug("<%s._get_bulk_current_data>. | URL: %s | Response:\n%s", __class__.__name__, api_url, res)
 
             # results.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
-            data = MultiPart(
-                universalis=self,
-                resolved_items=[CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value],
-                **res,
-            )
+            if data is None:
+                data = MultiPart(
+                    universalis=self,
+                    resolved_items=[
+                        CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value
+                    ],
+                    **res,
+                )
+            else:
+                data.items.extend([CurrentData(universalis=self, data=value) for value in res.get("items").values() if "listings" in value])
+                data.unresolved_items.extend(res["unresolvedItems"])
+
         return data
 
     async def get_history_data(
@@ -470,9 +476,9 @@ class UniversalisAPI:
 
 
         .. note::
-            - If you specify a `<World>`.
+            - If you specify a :class:`World` when getting marketboard data..
                 - All `<HistoryData.entries>` will not have the attributes `world_name`.
-            - If you specify a `<DataCenter>`.
+            - If you specify a :class:`DataCenter` when getting marketboard data...
                 - All  `<HistoryData.entries>` will have the `world_id` and `world_name` attributes.
                 - `<HistoryData>` will also have an additional attribute called `dc_name`.
 
@@ -538,9 +544,9 @@ class UniversalisAPI:
 
 
         .. note::
-            - If you specify a `<World>`.
+            - If you specify a :class:`World` when getting marketboard data..
                 - All `<HistoryData.entries>` will not have the attributes `world_name`.
-            - If you specify a `<DataCenter>`.
+            - If you specify a :class:`DataCenter` when getting marketboard data...
                 - All  `<HistoryData.entries>` will have the `world_id` and `world_name` attributes.
                 - `<HistoryData>` will also have an additional attribute called `dc_name`.
 
@@ -592,7 +598,7 @@ class UniversalisAPI:
         if world_or_dc is None:
             world_or_dc = self.default_datacenter
 
-        # If we are given a single entry in our list; use the `get_current_data` instead.
+        # If we are given a single entry in our list; use the `get_history_data` instead.
         # We could modify the `join` statement below; but this is far easier and provides the same results.
         # So if the `dcName` key exists, we searched by a DataCenter.
         # otherwise the `worldName` and `worldID` key will exist.
@@ -623,11 +629,15 @@ class UniversalisAPI:
                 res,
             )
             # results.extend(HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value)
-            data = MultiPart(
-                universalis=self,
-                resolved_items=[HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value],
-                **res,
-            )
+            if data is None:
+                data = MultiPart(
+                    universalis=self,
+                    resolved_items=[HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value],
+                    **res,
+                )
+            else:
+                data.items.extend([HistoryData(universalis=self, data=value) for value in res.get("items").values() if "entries" in value])
+                data.unresolved_items.extend(res["unresolvedItems"])
         return data
 
     @staticmethod
@@ -710,7 +720,7 @@ class Generic:
     _repr_keys: list[str]
 
     world_id: Optional[int]
-    world_name: Optional[str]
+    # world_name: Optional[str]
     # This value only exists if you look up results by "Datacenter" instead of "World"
     dc_name: Optional[str]
     _raw: DataTypedAliase | MultiPartData
@@ -731,6 +741,23 @@ class Generic:
             return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
                 f"{e}: {getattr(self, e)}" for e in sorted(self.__dict__) if e.startswith("_") is False
             ])
+
+    @property
+    def world_name(self) -> Optional[str]:
+        """The Final Fantasy 14 World name, if applicable.
+
+        .. note::
+            - If you specify a :class:`World` when getting marketboard data..
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will not have the attributes `world_name`.
+            - If you specify a :class:`DataCenter` when getting marketboard data...
+                - All `<CurrentData.listings>` and `<CurrentData.recent_history>` will have the `world_id` and `world_name` attributes.
+                - :class:`CurrentData` will also have an additional attribute called `dc_name`.
+        """
+        return self._world_name
+
+    @world_name.setter
+    def world_name(self, value: Optional[str]) -> None:
+        self._world_name: Optional[str] = value
 
 
 class GenericData(Generic):
@@ -931,8 +958,8 @@ class CurrentData(GenericData):
                 self.listings = value
 
             # This should handle price formatting.
-            elif "price" in key.lower() and (isinstance(value, (int, float))):
-                setattr(self, key, f"{round(value):,d}")
+            # elif "price" in key.lower() and (isinstance(value, (int, float))):
+            #     setattr(self, key, f"{round(value):,d}")
 
             elif key.lower() == "has_data" and isinstance(value, int):
                 self.has_data = bool(value)
@@ -1060,8 +1087,8 @@ class CurrentDataEntries(Generic):
                 setattr(self, key, bool(value))
 
             # This should handle price formatting.
-            elif isinstance(value, (int, float)) and ("price" in key.lower() or key.lower() == "total" or key.lower() == "tax"):
-                setattr(self, key, f"{round(value):,d}")
+            # elif isinstance(value, (int, float)) and ("price" in key.lower() or key.lower() == "total" or key.lower() == "tax"):
+            #     setattr(self, key, f"{round(value):,d}")
 
             else:
                 setattr(self, key, value)
@@ -1218,8 +1245,8 @@ class HistoryData(GenericData):
             if key.lower() == "entries" and isinstance(value, list):
                 self.entries = value
             # This should handle price formatting.
-            elif isinstance(value, (int, float)) and "velocity" in key:
-                setattr(self, key, f"{round(value):,d}")
+            # elif isinstance(value, (int, float)) and "velocity" in key:
+            #     setattr(self, key, f"{round(value):,d}")
             else:
                 setattr(self, key, value)
         self.name = self._universalis._get_item(self.item_id)  # type: ignore[reportPrivateUsage] # noqa: SLF001
@@ -1300,8 +1327,8 @@ class HistoryDataEntries(Generic):
                 setattr(self, key, bool(value))
 
             # This should handle price formatting.
-            elif isinstance(value, (int, float)) and "price" in key:
-                setattr(self, key, f"{round(value):,d}")
+            # elif isinstance(value, (int, float)) and "price" in key:
+            #     setattr(self, key, f"{round(value):,d}")
             else:
                 setattr(self, key, value)
 

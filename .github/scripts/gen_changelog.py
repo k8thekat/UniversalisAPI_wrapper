@@ -109,11 +109,11 @@ def gitHub_initial_commit() -> None:
 
     # Format the git log data into a dictionary for Changelog.
     output = subprocess.check_output(["git", "log", '--format="%B"'])
-    files: dict[str, list[str]] = {}
+    headers: dict[str, list[str]] = {}
     cur_data = output.decode("utf-8")
     cur_data = cur_data.strip().strip('"')
     cur_data = cur_data.split("\n")
-    file_name = None
+    header = None
     for entry in cur_data:
         _entry = entry
         if len(entry) == 0 or len(entry) == 1:
@@ -126,19 +126,19 @@ def gitHub_initial_commit() -> None:
             _entry = entry.strip('"')
 
         elif entry.startswith("#"):
-            file_name = entry[1:].strip()
-            if file_name not in files:
-                files[file_name] = []
+            header = entry[1:].strip()
+            if header not in headers:
+                headers[header] = []
 
         else:
             if entry.startswith("--"):
                 _entry = "\t-" + entry[2:]
-            if file_name is None:
-                file_name = "Overall"
-                files[file_name] = []
-            files[file_name].append(_entry)
+            if header is None:
+                header = "Overall"
+                headers[header] = []
+            headers[header].append(_entry)
 
-    update_changelog(version=version, new_commit=new_commit, files=files)
+    update_changelog(version=version, new_commit=new_commit, files=headers)
 
 
 def update_changelog(version: str, new_commit: str, files: dict[str, list[str]]) -> None:
@@ -146,7 +146,7 @@ def update_changelog(version: str, new_commit: str, files: dict[str, list[str]])
     set_version = f"# Version - {version} - [{new_commit[:7]}]({repo_url}/commit/{new_commit})\n"
     data = set_version
     for file_name, file_changes in files.items():
-        data: str = data + "##" + file_name + "\n" + "\n".join(file_changes) + "\n\n"
+        data: str = data + "## " + file_name + "\n" + "\n".join(file_changes) + "\n\n"
 
     data = data + changelog_data
     with cl_file.open("r+", encoding="utf-8") as changelog:
