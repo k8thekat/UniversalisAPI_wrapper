@@ -1,3 +1,10 @@
+# Version - 4.0.2-dev - [b07cf6e](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/b07cf6e)
+## Reverted formatting on price values.
+- Realized doing math on strings.. :cry:
+
+## ISSUES
+- Fixed data return on `MultiPart` as it was overwriting the object not returning full results.
+
 # Version - 4.0.1-dev - [28136d2](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/28136d2)
 ##Changelog generation code formatting typo.
 
