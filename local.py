@@ -22,6 +22,13 @@ LOGGER: logging.Logger = logging.getLogger(__name__)
 async def local_test() -> None:
     stime = time()
     # item_id = 10373 # magitek repair materials
+    async with UniversalisAPI() as market:
+        res = await market.get_current_data(36184)
+        print(res)
+    LOGGER.info("Completed local_test() in %s seconds...", format(time() - stime, ".3f"))
+    return
+
+async def dev_test() -> None:
     items = [1, 10373]
     async with UniversalisAPI() as market:
         res: CurrentData | MultiPart | None = await market.get_bulk_current_data(items, world_or_dc=World.Zalera)
@@ -33,15 +40,13 @@ async def local_test() -> None:
             print()
             print(res)
             print()
-            print(res.resolved_items[0])
+            print(res.items[0])
             print()
-            if isinstance(res.resolved_items[0], CurrentData):
-                print(res.resolved_items[0].listings[0])
+            if isinstance(res.items[0], CurrentData):
+                print(res.items[0].listings[0])
         else:
             print("Failed", type(res))
 
-    LOGGER.info("Completed local_test() in %s seconds...", format(time() - stime, ".3f"))
-    return
 
 
 async def build_test() -> None:

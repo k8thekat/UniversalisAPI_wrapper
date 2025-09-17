@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "4.0.2-dev"
+__version__ = "4.1.0-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -721,8 +721,8 @@ class Generic:
 
     world_id: Optional[int]
     # world_name: Optional[str]
-    # This value only exists if you look up results by "Datacenter" instead of "World"
     dc_name: Optional[str]
+    "This value only exists if you look up results by `Datacenter` instead of `World`"
     _raw: DataTypedAliase | MultiPartData
 
     def __init__(self, data: DataTypedAliase | MultiPartData) -> None:
@@ -933,6 +933,7 @@ class CurrentData(GenericData):
         self._universalis = universalis
         self._repr_keys = [
             "world_name",
+            "dc_name",
             "last_upload_time",
             "item_id",
             "regular_sale_velocity",
@@ -950,6 +951,7 @@ class CurrentData(GenericData):
         # We get it early here, as the for loop won't set it to `None` if the data isn't there.
         # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
         self.world_name = data.get("worldName", None)
+        self.dc_name = data.get("dcName", None)
 
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
@@ -975,7 +977,9 @@ class CurrentData(GenericData):
 
     @listings.setter
     def listings(self, value: list[CurrentListing]) -> None:
-        self._listings: list[CurrentDataEntries] = sorted([CurrentDataEntries(data=entry, world_name=self.world_name) for entry in value])
+        self._listings: list[CurrentDataEntries] = sorted([
+            CurrentDataEntries(data=entry, world_name=self.world_name, dc_name=self.dc_name) for entry in value
+        ])
 
     @property
     def recent_history(self) -> list[HistoryDataEntries]:
@@ -984,7 +988,9 @@ class CurrentData(GenericData):
 
     @recent_history.setter
     def recent_history(self, value: list[HistoryEntries]) -> None:
-        self._recent_history: list[HistoryDataEntries] = sorted([HistoryDataEntries(data=entry) for entry in value])
+        self._recent_history: list[HistoryDataEntries] = sorted([
+            HistoryDataEntries(data=entry, world_name=self.world_name, dc_name=self.dc_name) for entry in value
+        ])
 
 
 class CurrentDataEntries(Generic):
@@ -1064,7 +1070,7 @@ class CurrentDataEntries(Generic):
     _last_review_time: datetime.datetime | int
     _materia: int
 
-    def __init__(self, data: CurrentListing, *, world_name: Optional[str] = None) -> None:
+    def __init__(self, data: CurrentListing, *, world_name: Optional[str] = None, dc_name: Optional[str] = None) -> None:
         """Build your JSON response :class:`CurrentDataEntries`.
 
         Represents the data from property `<CurrentData>.listings`.
@@ -1075,12 +1081,15 @@ class CurrentDataEntries(Generic):
             The JSON response data as a dict.
         world_name: :class:`Optional[str]`
             The Final Fantasy 14 World name, if applicable.
+        dc_name: :class:`Optional[str]`
+            The Final Fantasy 14 DataCenter name, if applicable.
 
         """
         super().__init__(data=data)
-        self._repr_keys = ["world_name", "price_per_unit", "quantity", "hq", "materia", "total", "tax"]
+        self._repr_keys = ["world_name", "dc_name", "price_per_unit", "quantity", "hq", "materia", "total", "tax"]
 
         self.world_name = world_name
+        self.dc_name = dc_name
         for key_, value in data.items():
             key = UniversalisAPI.from_camel_case(key_name=key_)
             if key.lower() in {"on_mannequin", "is_crafted", "hq"} and isinstance(value, int):
@@ -1304,7 +1313,7 @@ class HistoryDataEntries(Generic):
     world_id: Optional[int]
     _timestamp: datetime.datetime | int
 
-    def __init__(self, data: HistoryEntries, *, world_name: Optional[str] = None) -> None:
+    def __init__(self, data: HistoryEntries, *, world_name: Optional[str] = None, dc_name: Optional[str] = None) -> None:
         """Build your JSON response :class:`HistoryDataEntries`.
 
         Represents the data from property `<HistoryData>.entries` and `<CurrentData>.recent_history`.
@@ -1315,11 +1324,14 @@ class HistoryDataEntries(Generic):
             The JSON response data as a dict.
         world_name: :class:`Optional[str]`
             The Final Fantasy 14 World name, if applicable.
+        dc_name: :class:`Optional[str]`
+            The Final Fantasy 14 DataCenter name, if applicable.
 
         """
         super().__init__(data=data)
-        self._repr_keys = ["world_name", "timestamp", "quantity", "price_per_unit", "hq"]
+        self._repr_keys = ["world_name", "dc_name", "timestamp", "quantity", "price_per_unit", "hq"]
         self.world_name = world_name
+        self.dc_name = dc_name
 
         for key_, value in data.items():
             key: str = UniversalisAPI.from_camel_case(key_name=key_)
