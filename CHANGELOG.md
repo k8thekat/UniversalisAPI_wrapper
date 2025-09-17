@@ -1,3 +1,8 @@
+# Version - 4.1.0-dev - [45a28dc](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/45a28dc)
+## Minor fixes
+- Added default values for `world_name` and `dc_name` for CurrentDataEntries` and `HistoryDataEntries`.
+- Updated documentation.
+
 # Version - 4.0.2-dev - [b07cf6e](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/b07cf6e)
 ## Reverted formatting on price values.
 - Realized doing math on strings.. :cry:
