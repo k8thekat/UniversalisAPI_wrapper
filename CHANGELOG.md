@@ -1,3 +1,8 @@
+# Version - 5.0.0-dev - [f569ea1](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/f569ea1)
+## Minor Update
+- Changed from `ItemQuality` to a Literal for getting current marketboard functions.
+- Added a `get_worlds` to the DataCenterToWorlds enum.
+
 # Version - 4.1.0-dev - [45a28dc](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/45a28dc)
 ## Minor fixes
 - Added default values for `world_name` and `dc_name` for CurrentDataEntries` and `HistoryDataEntries`.
