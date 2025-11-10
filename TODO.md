@@ -9,7 +9,3 @@ Current todos~
 
 - An item field filtering for API query in functions.
     - Consider `yarl` per @AbstractUmbra -> https://pypi.org/project/yarl/
-
-- *DONE* - Be able to access `unresolvedItems` or other keys of a BULK search.
-
-- *DONE* - Format price values `return '${:,d}'.format(amount)`

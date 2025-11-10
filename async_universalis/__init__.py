@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "4.1.0-dev"
+__version__ = "5.0.0-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -268,7 +268,8 @@ class UniversalisAPI:
         world_or_dc: Optional[DataCenter | World] = None,
         num_listings: int = 10,
         num_history_entries: int = 10,
-        item_quality: ItemQuality = ItemQuality.NQ,
+        # item_quality: ItemQuality = ItemQuality.NQ,
+        item_quality: Literal["HQ", "NQ"] = "NQ",
         trim_item_fields: bool = False,
     ) -> CurrentData:
         """Retrieve the current Universalis marketboard data for the provided item.
@@ -323,7 +324,7 @@ class UniversalisAPI:
             world_or_dc = self.default_datacenter
 
         api_url: str = (
-            f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={item_quality.value}"
+            f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={item_quality}"
         )
         # ? Suggestion
         # A fields class to handle querys.
@@ -343,7 +344,7 @@ class UniversalisAPI:
         world_or_dc: Optional[DataCenter | World] = None,
         num_listings: int = 10,
         num_history_entries: int = 10,
-        item_quality: ItemQuality = ItemQuality.NQ,
+        item_quality: Literal["HQ", "NQ"] = "NQ",
         trim_item_fields: bool = False,
     ) -> CurrentData | MultiPart | None:
         """Retrieve a bulk item search of Universalis marketboard data.
@@ -429,7 +430,7 @@ class UniversalisAPI:
         for idx in range(0, len(query), 100):
             api_url: str = (
                 f"{self.base_api_url}/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?listings={num_listings}"
-                f"&entries={num_history_entries}&hq={item_quality.value}"
+                f"&entries={num_history_entries}&hq={item_quality}"
             )
             # If we need/want to trim fields.
             if trim_item_fields:
@@ -734,13 +735,30 @@ class Generic:
 
     def __repr__(self) -> str:
         try:
-            return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
-                f"{e}: {getattr(self, e)}" for e in self._repr_keys if e.startswith("_") is False
-            ])
+            data = self._repr_keys
         except AttributeError:
-            return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
-                f"{e}: {getattr(self, e)}" for e in sorted(self.__dict__) if e.startswith("_") is False
-            ])
+            data = sorted(self.__dict__)
+
+        temp = f"\n\n__{self.__class__.__name__}__\n"
+        for entry in data:
+            value = getattr(self, entry)
+            if value is None:
+                continue
+            if isinstance(value, str) and value.startswith("_"):
+                continue
+            # Should handle basic formatting on any large numbers without impacting data manipulation.
+            if isinstance(value, float):
+                value = f"{value:,d}"
+            temp += f"{entry}: {value}"
+        return temp
+
+        # return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
+        #     f"{e}: {getattr(self, e)}" for e in self._repr_keys if e.startswith("_") is False
+        # ])
+        # except AttributeError:
+        #     return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
+        #         f"{e}: {getattr(self, e)}" for e in sorted(self.__dict__) if e.startswith("_") is False
+        #     ])
 
     @property
     def world_name(self) -> Optional[str]:
@@ -1139,11 +1157,11 @@ class CurrentDataEntries(Generic):
         Returns
         -------
         :class:`bool`
-            If `<CurrentDataEntries>.hq` is equal to `<object>.hq` and `<CurrentDataEntries>.listing_id` is equal to `<object>.listing_id`.
+            If `<CurrentDataEntries>.listing_id` is equal to `<object>.listing_id`.
 
         """
         return (
-            isinstance(other, self.__class__) and self.hq == other.hq and self.listing_id == other.listing_id
+            isinstance(other, self.__class__) and self.listing_id == other.listing_id
         )  # and self.price_per_unit == other.price_per_unit
 
     def __lt__(self, other: object) -> bool:
