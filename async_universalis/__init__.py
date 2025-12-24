@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "5.0.0-dev"
+__version__ = "5.0.1-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -268,7 +268,6 @@ class UniversalisAPI:
         world_or_dc: Optional[DataCenter | World] = None,
         num_listings: int = 10,
         num_history_entries: int = 10,
-        # item_quality: ItemQuality = ItemQuality.NQ,
         item_quality: Literal["HQ", "NQ"] = "NQ",
         trim_item_fields: bool = False,
     ) -> CurrentData:
@@ -276,7 +275,7 @@ class UniversalisAPI:
 
         Retrieves the data currently shown on the market board for the requested item and world or data center.
 
-        API: https://docs.universalis.app/#current-item-price
+        API: https://docs.universalis.app/#market-board-current-data
 
         .. note::
             If you want to modify the returned data fields, access `<UniversalisAPI>.single_item_fields` property and change the format.
@@ -323,9 +322,9 @@ class UniversalisAPI:
         if world_or_dc is None:
             world_or_dc = self.default_datacenter
 
-        api_url: str = (
-            f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={item_quality}"
-        )
+        quality = 1 if item_quality == "HQ" else 0
+
+        api_url: str = f"{self.base_api_url}/{world_or_dc.name}/{item}?listings={num_listings}&entries={num_history_entries}&hq={quality}"
         # ? Suggestion
         # A fields class to handle querys.
         # If we need/want to trim fields.
@@ -425,12 +424,12 @@ class UniversalisAPI:
                 trim_item_fields=trim_item_fields,
             )
 
-        # results: list[CurrentData] = []
+        quality = 1 if item_quality == "HQ" else 0
         data: Optional[MultiPart] = None
         for idx in range(0, len(query), 100):
             api_url: str = (
                 f"{self.base_api_url}/{world_or_dc.name}/{','.join(query[idx : idx + 100])}?listings={num_listings}"
-                f"&entries={num_history_entries}&hq={item_quality}"
+                f"&entries={num_history_entries}&hq={quality}"
             )
             # If we need/want to trim fields.
             if trim_item_fields:
@@ -748,8 +747,8 @@ class Generic:
                 continue
             # Should handle basic formatting on any large numbers without impacting data manipulation.
             if isinstance(value, float):
-                value = f"{value:,d}"
-            temp += f"{entry}: {value}"
+                value = f"{value:,.0f}"
+            temp += f"{entry}: {value}\n"
         return temp
 
         # return f"\n\n__{self.__class__.__name__}__\n" + "\n".join([
@@ -1160,9 +1159,7 @@ class CurrentDataEntries(Generic):
             If `<CurrentDataEntries>.listing_id` is equal to `<object>.listing_id`.
 
         """
-        return (
-            isinstance(other, self.__class__) and self.listing_id == other.listing_id
-        )  # and self.price_per_unit == other.price_per_unit
+        return isinstance(other, self.__class__) and self.listing_id == other.listing_id  # and self.price_per_unit == other.price_per_unit
 
     def __lt__(self, other: object) -> bool:
         """Comapres the `<object>.hq` attribute to `self.hq` and `<object>.last_review_time` > `self.last_review_time`.
