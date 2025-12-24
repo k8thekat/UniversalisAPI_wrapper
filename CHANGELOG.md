@@ -1,3 +1,9 @@
+# Version - 5.0.1-dev - [ad0683b](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/ad0683b)
+## Minor fixes for endpoints.
+- Changed parameter type for `item_quality` from Enum to Literal strings.
+	- Updated logic in `get_current_data()` to handle changes.
+- Added minor formatting to the `__repr__()` func all object's use. Formatting the "price" values.
+
 # Version - 5.0.0-dev - [f569ea1](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/f569ea1)
 ## Minor Update
 - Changed from `ItemQuality` to a Literal for getting current marketboard functions.
