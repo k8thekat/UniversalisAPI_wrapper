@@ -1,405 +1,108 @@
-#type: ignore
 import argparse
 import asyncio
 import json
 import logging
+from logging.handlers import TimedRotatingFileHandler
+import datetime
 from argparse import Namespace
 from pathlib import Path
 from time import time
-from typing import Any
+from typing import Any, ClassVar, Optional, TYPE_CHECKING
+from configparser import ConfigParser
+import sys
+import subprocess
 
-import aiohttp
+from async_universalis import  CurrentData, HistoryData, ItemQuality, UniversalisAPI, MultiPart, DataCenter, World, HistoryDataEntries
 
-from universalis import  CurrentData, CurrentDataEntries,  HistoryData, ItemQuality, UniversalisAPI, World
+if TYPE_CHECKING:
+    from async_universalis import DataTypedAliase, MultiPartData
 
-local_data_path: Path = Path(__file__).parent.joinpath("moogle_intuition")
-items = [
-    "4551",
-    "5702",
-    "5707",
-    "5712",
-    "5703",
-    "5708",
-    "5713",
-    "18025",
-    "18026",
-    "18027",
-    "25194",
-    "25195",
-    "25196",
-    "26735",
-    "26736",
-    "26737",
-    "33925",
-    "33926",
-    "33927",
-    "33938",
-    "33939",
-    "33940",
-    "41765",
-    "41766",
-    "41767",
-    "10336",
-    "12667",
-    "28724",
-    "25062",
-    "25066",
-    "24518",
-    "24520",
-    "24521",
-    "26554",
-    "21281",
-    "27303",
-    "27304",
-    "27305",
-    "16734",
-    "16735",
-    "15652",
-    "5339",
-    "14142",
-    "14143",
-    "14144",
-    "14145",
-    "14937",
-    "12886",
-    "12905",
-    "12906",
-    "12907",
-    "12931",
-    "12932",
-    "12933",
-    "12934",
-    "12935",
-    "12633",
-    "15945",
-    "16907",
-    "16906",
-    "17574",
-    "19840",
-    "19876",
-    "21089",
-    "21301",
-    "21082",
-    "22438",
-    "22439",
-    "22446",
-    "23181",
-    "24281",
-    "24282",
-    "31320",
-    "29661",
-    "29662",
-    "29663",
-    "29664",
-    "29665",
-    "29666",
-    "29667",
-    "29668",
-    "31117",
-    "31118",
-    "31119",
-    "31120",
-    "31121",
-    "31122",
-    "31123",
-    "31124",
-    "31758",
-    "31759",
-    "31760",
-    "31761",
-    "31762",
-    "31763",
-    "31764",
-    "31765",
-    "33186",
-    "33187",
-    "33188",
-    "33189",
-    "33190",
-    "33191",
-    "33192",
-    "33193",
-    "27844",
-    "27845",
-    "27846",
-    "27847",
-    "27848",
-    "28718",
-    "29507",
-    "29508",
-    "29509",
-    "29510",
-    "29511",
-    "31908",
-    "31909",
-    "31910",
-    "31911",
-    "31912",
-    "39595",
-    "36099",
-    "36100",
-    "36101",
-    "36102",
-    "36103",
-    "37284",
-    "38271",
-    "38272",
-    "38273",
-    "38274",
-    "38275",
-    "39864",
-    "39865",
-    "39866",
-    "39867",
-    "39868",
-    "16734",
-    "16735",
-    "15652",
-    "5339",
-    "14142",
-    "14143",
-    "14144",
-    "14145",
-    "14937",
-    "12886",
-    "12905",
-    "12906",
-    "12907",
-    "12931",
-    "12932",
-    "12933",
-    "12934",
-    "12935",
-    "12633",
-    "8155",
-    "8150",
-    "15945",
-    "16907",
-    "16906",
-    "17574",
-    "12839",
-    "19840",
-    "19876",
-    "21089",
-    "21301",
-    "21082",
-    "22438",
-    "22439",
-    "22446",
-    "23181",
-    "24281",
-    "24282",
-    "31320",
-    "33186",
-    "33187",
-    "33188",
-    "33189",
-    "33190",
-    "33191",
-    "33192",
-    "33193",
-    "27844",
-    "27845",
-    "27846",
-    "27847",
-    "27848",
-    "28718",
-    "29507",
-    "29508",
-    "29509",
-    "29510",
-    "29511",
-    "31908",
-    "31909",
-    "31910",
-    "31911",
-    "31912",
-    "10336",
-    "28724",
-    "12667",
-    "26554",
-    "21281",
-    "25062",
-    "25066",
-    "24518",
-    "24520",
-    "24521",
-    "27303",
-    "27304",
-    "27305",
-    "45002",
-    "5702",
-    "5707",
-    "5712",
-    "5703",
-    "5708",
-    "5713",
-    "18025",
-    "18026",
-    "18027",
-    "25194",
-    "25195",
-    "25196",
-    "26735",
-    "26736",
-    "26737",
-    "33925",
-    "33926",
-    "33927",
-    "33938",
-    "33939",
-    "33940",
-    "41765",
-    "41766",
-    "41767",
-    "38715",
-    "38716",
-    "38717",
-    "38718",
-    "38719",
-    "38720",
-    "38721",
-    "38722",
-    "38748",
-    "38749",
-    "38750",
-    "38751",
-    "38752",
-    "38753",
-    "38754",
-    "38755",
-    "39765",
-    "39766",
-    "39767",
-    "39768",
-    "39769",
-    "39770",
-    "39771",
-    "39772",
-    "41246",
-    "41247",
-    "41248",
-    "41249",
-    "41250",
-    "41251",
-    "41252",
-    "41253",
-    "29661",
-    "29662",
-    "29663",
-    "29664",
-    "29665",
-    "29666",
-    "29667",
-    "29668",
-    "31117",
-    "31118",
-    "31119",
-    "31120",
-    "31121",
-    "31122",
-    "31123",
-    "31124",
-    "31758",
-    "31759",
-    "31760",
-    "31761",
-    "31762",
-    "31763",
-    "31764",
-    "31765",
-]
-
-
-async def sample() -> None:
-    item_id = 14  # Fire Cluster
-    # You only need to pass in a aiohttp.ClientSession if
-    # you already have one you are using elsewhere in your code base or have a Pool/etc..
-    session = aiohttp.ClientSession()
-    market = UniversalisAPI(session=session)
-
-    # You are able to limit the number of listings and history results by setting
-    # "num_history" or "num_listing".
-    entries = 50
-
-    # You can filter the data prior by only getting a specific Final Fantasy 14 World
-    # By default it will search an entire Datacenter which can be accessed via `<UniversalisAPI>.default_datacenter`
-    # Or you can pass a WorldEnum object as the `world_or_dc` parameter.
-    world = World.Zalera
-    cur_data: CurrentData = await market.get_current_data(
-        item=item_id,
-        num_history_entries=entries,
-        num_listings=entries,
-        world_or_dc=world,
-    )
-
-    # Maybe you want the single cheapest listing, simple call `sort_listings` and get the first entry.
-    sorted_list: list[CurrentDataEntries] = cur_data.sort_listings()
-    cheapest: CurrentDataEntries = sorted_list[0]
-    # Then the most expensive listing would be at the end.
-    # Example: expensive: CurrentDataEntries = sorted_list[-1]
-    # CurrentDataEntries has a pre-defined `__repr__()` and `__str__()`` to return useful attributes if desired.
-    print(cheapest.world_name, cheapest.price_per_unit, cheapest.quantity)
-    # or
-    # print(cheapest)
-
-    # You can also get the most expensive entry by setting
-    # the reverse parameter to "True". Thus flipping the order of the listings.
-    sorted_list = cur_data.sort_listings(reverse=True)
-    expensive: CurrentDataEntries = sorted_list[0]
-    print(expensive)
-
-
-local_data_path: Path = Path(__file__).parent.joinpath("")
+local_data_path: Path = Path(__file__).parent.joinpath("local_data")
 response_path: Path = Path(__file__).parent.joinpath("garlandtools/_responses")
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+
+# Umbra: DC = Chaos
 async def local_test() -> None:
     stime = time()
     # item_id = 10373 # magitek repair materials
+    # await marketboard_parse(DataCenter.Chaos)
     async with UniversalisAPI() as market:
-        res = await market.get_current_data(item=10373)
-        print(res)
-
+        parse_items(market, world_or_dc=DataCenter.Chaos, stack_size= 2)
     LOGGER.info("Completed local_test() in %s seconds...", format(time() - stime, ".3f"))
     return
 
+async def dev_test() -> None:
+    pass
 
-async def build_test() -> None:
-    """ """
-    item_id = 10373  # Magitek Repair Materials.
+
+async def marketboard_parse(world_or_dc: DataCenter | World) -> None:
+    path = Path(__file__).parent.joinpath("local_data/marketboard_hunt")
     async with UniversalisAPI() as market:
-        print(market.default_datacenter.name, market.language.name)
-        # item_id = 46058  # Ceremonial Tunic of Healing
-        cur_data = await market.get_current_data(
-            item=item_id,
-            num_listings=100,
-            num_history_entries=100,
-            item_quality=ItemQuality.NQ,
-        )
-        print(cur_data.listings)
+        items: list[int] = await market.get_marketable_items()
+        # print(len(items))
+        for indx in range(0, len(items)-1, 100):
+            r_indx = indx + 100
+            try:
+                res: HistoryData | MultiPart | None = await market.get_bulk_history_data(items[indx:r_indx], world_or_dc, num_listings=500, history=datetime.timedelta(days=14).total_seconds() )
+            except Exception as e:
+                res = None
+                LOGGER.error("Exception -> | Type: %s | Exc: %s", e)
+                pass
+           
+            if res is None:
+                LOGGER.warning("Failure to parse %s - %s of items", indx, r_indx)
+                continue
+            
+            write_data_to_file(f"items_{indx}-{r_indx}{world_or_dc.name}.json", res._raw, path)
+            LOGGER.info("Parsed %s -> %s items", indx, r_indx)
 
-        history_bulk_data: list[HistoryData] = await market.get_bulk_history_data(items=[3, 4, 5])
-        print(history_bulk_data)
-
-        sugg_data = await market.get_suggested_price(item=3)
-        print(sugg_data)
-        print("BULK ITEM TESTING")
-        item_ids = []
-        for key, entry in market.item_dict.items():
-            if "materia" in entry.get("en").lower():
-                item_ids.append(key)
-        print(len(item_ids))
-        try:
-            data = await market.get_bulk_current_data(
-                items=item_ids,
-                num_listings=100,
-                num_history_entries=100,
-                item_quality=ItemQuality.NQ,
+def parse_items(self: UniversalisAPI, world_or_dc: World | DataCenter, low_ppu: int = 500, low_velocity: int = 10, stack_size: int = 1) -> None:
+    path = Path(__file__).parent.joinpath(f"local_data/marketboard_hunt/{world_or_dc.name}")
+    if path.exists() is False:
+        LOGGER.error("<%s.%s> | Failed to find a path related to the world_or_dc. | World or DC: %s | Path: %s", "local", "parse_items", world_or_dc, path)
+        return
+    files = [entry for entry in path.iterdir()]
+    files = sorted(files)
+    universalis = self
+    data: Optional[MultiPart] = None
+    for file in files:
+        # print(file)
+        res: MultiPartData = json.load(file.open())
+        if data is None:
+            data = MultiPart(
+                universalis=universalis,
+                resolved_items=[HistoryData(universalis=universalis, data=value) for value in res.get("items").values() if "entries" in value],
+                **res,
             )
-        except Exception as e:
-            print(e)
+        else:
+            data.items.extend([HistoryData(universalis=universalis, data=value) for value in res.get("items").values() if "entries" in value])
+            data.item_ids.extend(res.get("itemIDs"))
+            data.unresolved_items.extend(res["unresolvedItems"])
+
+    if data is None:
+        LOGGER.error("Data Items is None")
+        return
+    results: list[str] = []
+    # Sort our items by sale velocity, then look at the price per unit/stack size.
+    for item in sorted(data.items, key= lambda x: x.regular_sale_velocity, reverse=True):
+        if item.regular_sale_velocity > 0 :
+            if isinstance(item, HistoryData):
+                try:
+                    entry: HistoryDataEntries = item.entries[0]
+                    # and item.regular_sale_velocity < entry.quantity 
+                    if entry.quantity >= stack_size and item.regular_sale_velocity >= low_velocity and entry.price_per_unit >= low_ppu:
+                        LOGGER.info("Item Name: %s [%s]",item.name, item.item_id)
+                        LOGGER.info("Sale Velocity: %s", item.regular_sale_velocity)
+                        LOGGER.info("PPU: %s | Stack Size Sold: %s", entry.price_per_unit, entry.quantity)
+                        results.append(f"Item: {item.name}[{item.item_id}] || Sale Velocity: {item.regular_sale_velocity} || PPU: {entry.price_per_unit} || Stack Size: {entry.quantity}")
+                except IndexError:
+                    continue
+    write_data_to_file(f"{world_or_dc.name}_results.md", data=results)
+
+        
+
 
 
 def ini_load(file: Path, section: str, options: list[str]) -> list[str | None]:
@@ -535,7 +238,7 @@ _parser.add_argument("--upgrade", help="Run `uv sync -n --upgrade-package packag
 # group: argparse._MutuallyExclusiveGroup = _parser.add_mutually_exclusive_group(required=False)
 _parser.add_argument("-info", help="Set the logging level to `INFO`.", default=False, required=False, action="store_true")
 _parser.add_argument("-debug", help="Set the logging level to `INFO`.", default=False, required=False, action="store_true")
-_parsed_args: Launcher = _parser.parse_known_args()[0]
+_parsed_args: Launcher = _parser.parse_known_args()[0] # pyright: ignore[reportAssignmentType]
 
 # Logging section.
 LOGGER.name = "Local Logging - "

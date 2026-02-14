@@ -13,7 +13,7 @@ A simple and light weight wrapper for [Universalis](https://universalis.app) mar
 
 ## Currently Supported Endpoints
 
-- https://docs.universalis.app/#current-item-price
+- https://docs.universalis.app/#market-board-current-data
     - `UniversalisAPI.get_current_data()` and `UniversalisAPI.get_bulk_current_data()`
 - https://docs.universalis.app/#market-board-sale-history
     - `UniversalisAPI.get_history_data()` and `UniversalisAPI.get_bulk_history_data()`

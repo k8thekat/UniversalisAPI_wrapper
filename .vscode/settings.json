@@ -1,5 +1,5 @@
 {
-    "autoDocstring.customTemplatePath": "./numpy_template/numpy.mustache",
+    "autoDocstring.customTemplatePath": "./numpy_templates/numpy.mustache",
     "autoDocstring.startOnNewLine": false,
     "autoDocstring.quoteStyle": "\"\"\"",
     "autoDocstring.guessTypes": true,

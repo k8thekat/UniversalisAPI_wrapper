@@ -146,3 +146,75 @@ class MultiPartData(TypedDict):
     unresolvedItems: list[int]
     worldName: NotRequired[str]
     dcName: NotRequired[str]
+
+
+class AggregatedResponse(TypedDict):
+    results: list[AggregatedWorld]
+    failItems: list[int]
+
+
+class AggregatedWorld(TypedDict):
+    itemId: int
+    nq: AggregatedNQHQ
+    hq: AggregatedNQHQ
+    worldUploadTimes: list[WorldIDTime]
+
+
+class AggregatedNQHQ(TypedDict):
+    minListing: MinListing
+    recentPurchase: RecentPurcase
+    averageSalePrice: AverageSalePrice
+    dailySaleVelocity: SaleVelocity
+
+
+class MinListing(TypedDict):
+    world: Price
+    dc: PriceWorldID
+    region: PriceWorldID
+
+
+class RecentPurcase(TypedDict):
+    world: PriceTimestamp
+    dc: PriceTimeStampWorldID
+    region: PriceTimeStampWorldID
+
+
+class AverageSalePrice(TypedDict):
+    world: Price
+    dc: Price
+    region: Price
+
+
+class SaleVelocity(TypedDict):
+    world: Quantity
+    dc: Quantity
+    region: Quantity
+
+
+class PriceTimeStampWorldID(TypedDict):
+    price: float | int
+    timestamp: NotRequired[int]
+    worldId: NotRequired[int]
+
+
+class PriceTimestamp(TypedDict):
+    price: int
+    timestamp: int
+
+
+class WorldIDTime(TypedDict):
+    worldId: int
+    timestamp: int
+
+
+class Quantity(TypedDict):
+    quantity: float
+
+
+class Price(TypedDict):
+    price: float
+
+
+class PriceWorldID(TypedDict):
+    price: int
+    worldId: int

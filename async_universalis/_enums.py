@@ -18,10 +18,10 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
 02110-1301, USA.
 """
 
-from enum import IntEnum
-from typing import ClassVar
+from enum import Enum, IntEnum
+from typing import ClassVar, Optional
 
-__all__ = ("DataCenter", "DataCenterToWorlds", "ItemQuality", "Language", "World")
+__all__ = ("DataCenter", "DataCenterToWorlds", "ItemQuality", "Language", "Region", "World")
 
 
 class Language(IntEnum):
@@ -29,6 +29,15 @@ class Language(IntEnum):
     de = 2
     ja = 3
     fr = 4
+
+
+class Region(Enum):
+    japan = "Japan"
+    europe = "Europe"
+    north_america = "North-America"
+    oceania = "Oceania"
+    china = "China"
+    中国 = "中国"  # noqa: PLC2401
 
 
 class DataCenter(IntEnum):
@@ -205,3 +214,22 @@ class DataCenterToWorlds:
         World.Ultros,
     ]
     __data_centers__: ClassVar[list[str]] = ["Crystal", "Aether", "Dynamis", "Primal"]
+
+    @classmethod
+    def get_worlds(cls, datacenter: DataCenter) -> Optional[list[World]]:
+        """Get worlds for a given data center.
+
+        Parameters
+        ----------
+        datacenter: :class:`DataCenter`
+            The DataCenter object to parse for Worlds.
+
+        Returns
+        -------
+        :class:`Optional[list[World]]`
+            Returns `None` if failed attribute lookup, else returns a list of :class:`Worlds`.
+
+        """
+        if datacenter.name in cls.__data_centers__:
+            return getattr(cls, datacenter.name)
+        return None
