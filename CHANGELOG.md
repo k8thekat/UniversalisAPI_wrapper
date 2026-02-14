@@ -1,3 +1,7 @@
+# Version - 6.0.1-dev - [e2856f0](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/e2856f0)
+## Updated README.md
+- Added the new endpoints to the documentation.
+
 # Version - 6.0.0-dev - [9801aac](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/9801aac)
 ## Additional endpoints added!
 - Added new endpoints `get_aggregated_data()`, `get_marketable_items()` and `get_market_tax_rates()`.
