@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "5.0.1-dev"
+__version__ = "6.0.0-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -60,7 +60,7 @@ class VersionInfo(NamedTuple):
     release_level: Literal["release", "development"]
 
 
-version_info: VersionInfo = VersionInfo(major=3, minor=0, revision=2, release_level="development")
+version_info: VersionInfo = VersionInfo(major=6, minor=0, revision=0, release_level="development")
 
 
 __all__ = (
@@ -84,6 +84,11 @@ IGNORED_KEYS: list[str] = []
 
 DEFAULT_DATACENTER: DataCenter = DataCenter.Crystal
 DEFAULT_LANGUAGE: Language = Language.en
+
+BRANCH = "master"
+DATA_URLS = {
+    "items": f"https://raw.githubusercontent.com/ffxiv-teamcraft/ffxiv-teamcraft/refs/heads/{BRANCH}/libs/data/src/lib/json/items.json",
+}
 
 
 class UniversalisAPI:
@@ -123,13 +128,15 @@ class UniversalisAPI:
     _language: Language
     _datacenter: DataCenter
 
-    def __init__(self, session: Optional[aiohttp.ClientSession] = None) -> None:
+    def __init__(self, session: Optional[aiohttp.ClientSession] = None, *, no_load: bool = False) -> None:
         """Build your Universalis API wrapper.
 
         Parameters
         ----------
         session: :class:`Optional[aiohttp.ClientSession]`, optional
             An existing ClientSession object otherwise <UniversalisAPI> will create it's own, by default None.
+        no_load: :class:`bool`, optional
+            If we want to not load any JSON data.
 
         """
         # Setting it to None by default will be the best as to keep the class as light weight as possible at runtime unless needed.
@@ -153,7 +160,8 @@ class UniversalisAPI:
             "&fields=items.itemID%2Citems.listings.quantity%2Citems.listings.worldName%2Citems.listings.pricePerUnit"
             "%2Citems.listings.hq%2Citems.listings.total%2Citems.listings.tax%2Citems.listings.retainerName%2Citems.listings.creatorName%2Citems.listings.lastReviewTime%2Citems.lastUploadTime"
         )
-
+        if no_load:
+            return
         self._load_json()
 
     @property
@@ -206,6 +214,17 @@ class UniversalisAPI:
     def default_datacenter(self, value: DataCenter) -> None:
         self._datacenter = value
 
+    async def __aexit__(  # noqa: D105
+        self,
+        exc_type: Optional[type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[types.TracebackType],
+    ) -> None:
+        await self.clean_up()
+
+    async def __aenter__(self) -> Self:  # noqa: D105
+        return self
+
     def _load_json(self) -> None:
         path: pathlib.Path = pathlib.Path(__file__).parent.joinpath("items.json")
         if path.exists():
@@ -220,7 +239,102 @@ class UniversalisAPI:
             return None
         return res[self.language.name]
 
-    async def _request(self, url: str, request_params: Optional[AiohttpRequestOptions] = None) -> Any:
+    async def get_update_items(
+        self,
+        url: Optional[str] = None,
+        **request_params: Unpack[AiohttpRequestOptions],
+    ) -> Optional[dict[str, str]]:
+        """Get an updates JSON structured file containing all the existing Item names in FFXIV.
+
+        Structure:
+        ```
+        {
+        "1": {
+            "en": "Gil",
+            "de": "Gil",
+            "ja": "ギル",
+            "fr": "Gil"
+        },
+        }
+        ```
+
+        Parameters
+        ----------
+        url: :class:`Optional[str]`, optional
+            The URL to fetch the data from, by default None.
+            - Will use `DATA_URLS["items"] if `None`.
+
+        Returns
+        -------
+        :class:`Optional[dict[str, str]]`
+            Will return `None` if the request fails, otherwise the results from the URL.
+
+        """
+        if url is None:
+            url = DATA_URLS["items"]
+        path = pathlib.Path(__file__).parent
+        res: str | None = await self._request(url=url, **request_params)
+        # print(res)
+        if res is None:
+            return None
+        try:
+            data: dict[str, str] | None = json.loads(res)
+
+            if path.joinpath("items.json").exists():
+                path.joinpath("items.json").rename(path.joinpath("items_old.json"))
+
+            if isinstance(data, dict):
+                self.write_data_to_file(file_name="items.json", path=path, data=data, indent=4)
+                return data
+        # Not sure what could be raised with a JSON loads outside of a "TypeError", this will stay for now.
+        except Exception as e:  # noqa: BLE001
+            LOGGER.error("%s.%s> | Encountered an error. | Error: %s", __class__.__name__, "get_update_items", e)  # noqa: TRY400
+            return None
+
+        return None
+
+    def write_data_to_file(
+        self,
+        file_name: str,
+        data: bytes | dict[Any, Any] | str,
+        path: pathlib.Path = pathlib.Path(__file__).parent,
+        *,
+        mode: str = "w+",
+        **kwargs: Any,
+    ) -> None:
+        """Basic file dump with json handling. If the data parameter is of type `dict`, `json.dumps()` will be used with an indent of 4.
+
+        Parameters
+        ----------
+        path: :class:`Path`, optional
+            The Path to write the data, default's to `Path(__file__).parent`.
+        file_name: :class:`str`
+            The name of the file, include the file extension.
+        data: :class:`bytes | dict | str`
+            The data to write out to the path and file_name provided.
+        mode: :class:`str`, optional
+            The mode to open the provided file path with using `<Path.open()>`.
+        **kwargs: :class:`Any`
+            Any additional kwargs to be supplied to `<json.dumps()>`, if applicable.
+
+        """
+        file_name = file_name.lower()
+        with path.joinpath(file_name).open(mode=mode) as file:
+            LOGGER.debug("<%s.%s> | Wrote data to file %s located at: %s", __class__.__name__, "write_data_to_file", path, file_name)
+            if isinstance(data, bytes):
+                file.write(data.decode(encoding="utf-8"))
+            elif isinstance(data, dict):
+                file.write(json.dumps(data, **kwargs))
+            else:
+                file.write(data)
+        LOGGER.info(
+            "<%s.%s> | File write successful to path: %s ",
+            __class__.__name__,
+            "write_data_to_file",
+            path.joinpath(file_name).as_posix(),
+        )
+
+    async def _request(self, url: str, **request_params: Unpack[AiohttpRequestOptions]) -> Any:
         LOGGER.debug("<%s._request> | url: %s | user session: %s | req_params: %s ", __class__.__name__, url, self.session, request_params)
         # If the user supplied session is None; we create our own and set it to a private
         # attribute so we can close it later, otherwise we will use the user supplied session.
@@ -234,40 +348,103 @@ class UniversalisAPI:
         else:
             session = self.session
 
-        # kwargs handler.
-        if request_params is None:
-            data: aiohttp.ClientResponse = await session.get(url=url)
-        else:
-            data = await session.get(url=url, **request_params)
+        res: aiohttp.ClientResponse = await session.get(url=url, **request_params)
 
-        LOGGER.debug("<%s._request> | Status Code: %s | Content Type: %s", __class__.__name__, data.status, data.content_type)
+        LOGGER.debug("<%s._request> | Status Code: %s | Content Type: %s", __class__.__name__, res.status, res.content_type)
         # 404 - The world/DC or item requested is invalid. When requesting multiple items at once, an invalid item ID will not trigger this.
         # Instead, the returned list of unresolved item IDs will contain the invalid item ID or IDs.
-        if data.status == 404:
+        if res.status == 404:
             raise UniversalisError(
-                data.status,
+                res.status,
                 url,
                 "invalid World/DC or Item ID",
             )
-        if data.status == 400:
+        if res.status == 400:
             raise UniversalisError(
-                data.status,
+                res.status,
                 url,
                 "invalid parameters",
             )
-        if not 200 <= data.status < 300:
-            raise UniversalisError(data.status, url, "generic http request")
+        if not 200 <= res.status < 300:
+            raise UniversalisError(res.status, url, "generic http request")
         self.api_call_time = datetime.datetime.now(datetime.UTC)
-        res: Any = await data.json()
-        return res
+
+        if res.content_type == "application/json":
+            return await res.json()
+
+        return await res.content.read()
+
+    async def clean_up(self) -> None:
+        """Cleans up any open resources."""
+        LOGGER.debug("<%s._clean_up> | Closing open `aiohttp.ClientSession` %s", __class__.__name__, self._session)
+        if self._session is not None:
+            await self._session.close()
+
+    @staticmethod
+    def from_camel_case(
+        key_name: str,
+        *,
+        ignored_keys: Optional[list[str]] = None,
+        pre_formatted_keys: Optional[dict[str, str]] = None,
+    ) -> str:
+        """Resolve a camelCase string to snake_case.
+
+        .. note::
+            Adds a `_` before any uppercase char in the `key_name` and then calls `.lower()` on the remaining string.
+
+
+        .. note::
+            The parameter `pre_formatted_keys` the dict structure is `key` = "what to replace" and `value` = "replacement".
+            - Example: `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
+
+
+        Parameters
+        ----------
+        key_name: :class:`str`
+            The string to format.
+        ignored_keys: :class:`Optional[list[str]]`
+            An array of strings that if the `key_name` is in the array it will be ignored and instantly returned unformatted.
+            - You may provide your own, or use the constant `IGNORED_KEYS`
+        pre_formatted_keys: :class:`Optional[dict[str, str]]`
+            An dictionary with keys consisting of values to compare against and the value of the keys to be the replacement string.
+            - You may provide your own, or use the constant `PRE_FORMATTED_KEYS`
+
+        Returns
+        -------
+        :class:`str`
+            The formatted string.
+
+        """
+        if ignored_keys is None:
+            ignored_keys = IGNORED_KEYS
+        if pre_formatted_keys is None:
+            pre_formatted_keys = PRE_FORMATTED_KEYS
+
+        # We have keys we don't want to format/change during generation so add them to the ignored_keys list.
+        if key_name in ignored_keys:
+            return key_name
+
+        # If we find a pre_formatted key structure we want, let's replace the part and then return the rest.
+        for key, value in pre_formatted_keys.items():
+            if key in key_name:
+                key_name = key_name.replace(key, value)
+
+        temp: str = key_name[:1].lower()
+        for e in key_name[1:]:
+            if e.isupper():
+                temp += f"_{e.lower()}"
+                continue
+            temp += e
+        LOGGER.debug("<%s.from_camel_case> | key_name: %s | Converted: %s", __class__.__name__, key_name, temp)
+        return temp
 
     async def get_current_data(
         self,
         item: str | int,
-        *,
         world_or_dc: Optional[DataCenter | World] = None,
-        num_listings: int = 10,
-        num_history_entries: int = 10,
+        *,
+        num_listings: int = 25,
+        num_history_entries: int = 25,
         item_quality: Literal["HQ", "NQ"] = "NQ",
         trim_item_fields: bool = False,
     ) -> CurrentData:
@@ -339,10 +516,10 @@ class UniversalisAPI:
     async def get_bulk_current_data(
         self,
         items: list[str] | list[int],
-        *,
         world_or_dc: Optional[DataCenter | World] = None,
-        num_listings: int = 10,
-        num_history_entries: int = 10,
+        *,
+        num_listings: int = 25,
+        num_history_entries: int = 25,
         item_quality: Literal["HQ", "NQ"] = "NQ",
         trim_item_fields: bool = False,
     ) -> CurrentData | MultiPart | None:
@@ -367,6 +544,11 @@ class UniversalisAPI:
 
         .. note::
             You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
+
+
+        .. warning::
+            This can handle any length of an array for items; but will attempt to return the results in a single :class:`dict` object.
+            :shrug:
 
 
         Parameters
@@ -457,12 +639,12 @@ class UniversalisAPI:
     async def get_history_data(
         self,
         item: str | int,
-        *,
         world_or_dc: Optional[World | DataCenter] = None,
-        num_listings: int = 10,
-        min_price: int = 0,
+        *,
+        num_listings: int = 25,
+        min_price: int = 1,
         max_price: int = 2147483647,
-        history: int = 604800000,
+        history: float = 604800000,
     ) -> HistoryData:
         """Retrieve the Universalis marketboard history data for the provided item.
 
@@ -500,7 +682,7 @@ class UniversalisAPI:
         max_price: :class:`Optional[int]`
             The max price of the item, by default None.
         history: :class:`int`, optional
-            The timestamp float value for how far to go into the history; by default 604800000.
+            The timestamp float value for how far to go into the history; by default 7 days as seconds.
 
 
         Returns
@@ -525,12 +707,12 @@ class UniversalisAPI:
     async def get_bulk_history_data(
         self,
         items: list[str] | list[int],
-        *,
         world_or_dc: Optional[World | DataCenter] = None,
-        num_listings: int = 10,
-        min_price: int = 0,
+        *,
+        num_listings: int = 50,
+        min_price: int = 1,
         max_price: int = 2147483647,
-        history: int = 604800000,
+        history: float = 604800000,
     ) -> HistoryData | MultiPart | None:
         """Retrieve the Universalis marketboard history data for the provided item.
 
@@ -553,6 +735,10 @@ class UniversalisAPI:
         .. note::
             You can change the default DataCenter by setting the `<UniversalisAPI>.datacenter` property.
 
+        .. warning::
+            This can handle any length of an array for items; but will attempt to return the results in a single :class:`dict` object.
+            :shrug:
+
 
         Parameters
         ----------
@@ -568,7 +754,7 @@ class UniversalisAPI:
         max_price: :class:`Optional[int]`
             The max price of the item, by default None.
         history: :class:`int`, optional
-            The timestamp float value for how far to go into the history; by default 604800000.
+            The timestamp float value for how far to go into the history; by default 7 days as seconds.
 
 
         Returns
@@ -640,86 +826,117 @@ class UniversalisAPI:
                 data.unresolved_items.extend(res["unresolvedItems"])
         return data
 
-    @staticmethod
-    def from_camel_case(
-        key_name: str,
-        *,
-        ignored_keys: Optional[list[str]] = None,
-        pre_formatted_keys: Optional[dict[str, str]] = None,
-    ) -> str:
-        """Resolve a camelCase string to snake_case.
+    async def get_aggregated_data(
+        self,
+        items: list[str] | list[int],
+        world_dc_region: World | DataCenter | Region,
+        **request_params: Unpack[AiohttpRequestOptions],
+    ) -> AggregatedResponse:
+        """Retrieves aggregated market board data for the given items.
 
-        .. note::
-            Adds a `_` before any uppercase char in the `key_name` and then calls `.lower()` on the remaining string.
+        Up to 100 item IDs can be comma-separated in order to retrieve data for multiple items at once.
+        AverageSalePrice and DailySaleVelocity are calculated based on sales of the last 4 days.
+        This API uses only cached values and is therefore strongly preferred over
+        CurrentlyShown if individual sales/listings are not required.
 
 
-        .. note::
-            The parameter `pre_formatted_keys` the dict structure is `key` = "what to replace" and `value` = "replacement".
-            - Example: `ItemID` with `item_id`. Structure would be `{"ItemID": "item_id"}`".
-
+        API: `/aggregated/{world_dc_region}/{items}`.
 
         Parameters
         ----------
-        key_name: :class:`str`
-            The string to format.
-        ignored_keys: :class:`Optional[list[str]]`
-            An array of strings that if the `key_name` is in the array it will be ignored and instantly returned unformatted.
-            - You may provide your own, or use the constant `IGNORED_KEYS`
-        pre_formatted_keys: :class:`Optional[dict[str, str]]`
-            An dictionary with keys consisting of values to compare against and the value of the keys to be the replacement string.
-            - You may provide your own, or use the constant `PRE_FORMATTED_KEYS`
+        items: :class:`list[str] | list[int]`
+            The item ID or comma-separated item IDs to retrieve data for.
+        world_dc_region: :class:`World | DataCenter | Region`
+            The world, data center, or region to retrieve data for. This may be an ID or a name.
+            Regions should be specified as Japan, Europe, North-America, Oceania, China, or 中国.
 
         Returns
         -------
-        :class:`str`
-            The formatted string.
+        :class:`AggregatedResponse`
+            The aggregated cached response dat.
+
+        Raises
+        ------
+        KeyError
+            If "results" not in the response data.
 
         """
-        if ignored_keys is None:
-            ignored_keys = IGNORED_KEYS
-        if pre_formatted_keys is None:
-            pre_formatted_keys = PRE_FORMATTED_KEYS
+        query: list[str] = []
+        if len(items) > 100:
+            LOGGER.warning(
+                "<%s.%s> | The length of your items array is over 100, truncated... | len(items): %s",
+                __class__.__name__,
+                "get_aggregated_data",
+                len(items),
+            )
 
-        # We have keys we don't want to format/change during generation so add them to the ignored_keys list.
-        if key_name in ignored_keys:
-            return key_name
+        for entry in items[:100]:
+            if isinstance(entry, int):
+                query.append(str(entry))
+            else:
+                query.append(entry)
 
-        # If we find a pre_formatted key structure we want, let's replace the part and then return the rest.
-        for key, value in pre_formatted_keys.items():
-            if key in key_name:
-                key_name = key_name.replace(key, value)
+        api_url = f"{self.base_api_url}/aggregated/{world_dc_region.name}/{','.join(query)}"
+        res: AggregatedResponse | Any = await self._request(url=api_url, **request_params)
+        if "result" not in res:
+            raise KeyError
+        return res
 
-        temp: str = key_name[:1].lower()
-        for e in key_name[1:]:
-            if e.isupper():
-                temp += f"_{e.lower()}"
-                continue
-            temp += e
-        LOGGER.debug("<%s.from_camel_case> | key_name: %s | Converted: %s", __class__.__name__, key_name, temp)
-        return temp
+    async def get_marketable_items(self, **request_params: Unpack[AiohttpRequestOptions]) -> list[int]:
+        """Returns the set of marketable item IDs.
 
-    async def clean_up(self) -> None:
-        """Cleans up any open resources."""
-        LOGGER.debug("<%s._clean_up> | Closing open `aiohttp.ClientSession` %s", __class__.__name__, self._session)
-        if self._session is not None:
-            await self._session.close()
+        API: `/marketable`.
 
-    async def __aexit__(  # noqa: D105
-        self,
-        exc_type: Optional[type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[types.TracebackType],
-    ) -> None:
-        await self.clean_up()
+        Parameters
+        ----------
+        **request_params:
+            Any :class:`AiohttpRequest` parameters you want to supply.
 
-    async def __aenter__(self) -> Self:  # noqa: D105
-        return self
+        Returns
+        -------
+        :class:`list[int]`
+            List of item IDs.
+
+        Raises
+        ------
+        :class:`UniversalisError`
+            If the request status code is not 200.
+
+        """
+        api_url = f"{self.base_api_url}/marketable"
+        res: list[int] | Any = await self._request(url=api_url, **request_params)
+        if isinstance(res, list) is False:
+            raise TypeError
+        return res
+
+    async def get_market_tax_rates(self, world: World, **request_params: Unpack[AiohttpRequestOptions]) -> dict[str, int]:
+        """Retrieves the current tax rate data for the specified world. This data is provided by the Retainer Vocate in each major city.
+
+        API: `/tax-rates`.
+
+        Parameters
+        ----------
+        world: :class:`World`
+            The World to check the tax rate of.
+        **request_params:
+            Any :class:`AiohttpRequest` parameters you want to supply.
+
+        Returns
+        -------
+        :class:`dict[str, int]`
+            A key value pair of each market(major city) with an int value representing the "%" tax rate.
+
+        """
+        api_url = f"{self.base_api_url}/tax-rates?world={world.name}"
+        res: dict[str, int] = await self._request(url=api_url, **request_params)
+        return res
 
 
 class Generic:
     _repr_keys: list[str]
 
     world_id: Optional[int]
+    "The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable."
     # world_name: Optional[str]
     dc_name: Optional[str]
     "This value only exists if you look up results by `Datacenter` instead of `World`"
@@ -776,6 +993,10 @@ class Generic:
     def world_name(self, value: Optional[str]) -> None:
         self._world_name: Optional[str] = value
 
+    def to_json(self) -> DataTypedAliase | MultiPartData:
+        """Return this object in JSON format."""
+        return self._raw
+
 
 class GenericData(Generic):
     """Base class for mutual attributes and properties for Universalis data.
@@ -788,11 +1009,17 @@ class GenericData(Generic):
     item_id: int
     name: Optional[str]
     nq_sale_velocity: float | int
+    "The average number of NQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first)."
     hq_sale_velocity: float | int
+    "The average number of HQ sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first)."
     regular_sale_velocity: float | int
+    """The average number of sales per day, over the past seven days (or the entirety of the shown sales, whichever comes first)."""
     stack_size_histogram: dict[str, int]
+    "A map of quantities to listing counts, representing the number of listings of each quantity."
     stack_size_histogram_nq: dict[str, int]
+    "A map of quantities to NQ listing counts, representing the number of listings of each quantity."
     stack_size_histogram_hq: dict[str, int]
+    "A map of quantities to HQ listing counts, representing the number of listings of each quantity."
 
     _last_upload_time: datetime.datetime | int
 
@@ -1258,7 +1485,13 @@ class HistoryData(GenericData):
         """
         super().__init__(data=data)
         self._universalis = universalis
-        self._repr_keys = ["world_name", "dc_name", "item_id", "last_upload_time"]  # "entries" - Removed to prevent flooding the console.
+        self._repr_keys = [
+            "world_name",
+            "dc_name",
+            "item_id",
+            "name",
+            "last_upload_time",
+        ]  # "entries" - Removed to prevent flooding the console.
 
         # We get it early here, as the for loop won't set it to `None` if the data isn't there.
         # This is being used for `CurrentDataEntries` as fetching "world" data doesn't provide the field to `listings`.
@@ -1320,12 +1553,19 @@ class HistoryDataEntries(Generic):
     """
 
     hq: bool
+    "Whether or not the item was high-quality."
     price_per_unit: int
+    "The price per unit sold."
     quantity: int
+    "The stack size sold"
     buyer_name: Optional[str]
+    "The buyer's character name. This may be null."
     on_mannequin: Optional[bool]
+    "Whether or not this was purchased from a mannequin. This may be null."
     world_name: Optional[str]
+    "The Final Fantasy 14 World name, if applicable."
     world_id: Optional[int]
+    "The Final Fantasy 14 World ID, this will match up to the :class:`World`, if applicable."
     _timestamp: datetime.datetime | int
 
     def __init__(self, data: HistoryEntries, *, world_name: Optional[str] = None, dc_name: Optional[str] = None) -> None:
@@ -1433,9 +1673,13 @@ class MultiPart(Generic):
     """
 
     items: list[HistoryData | CurrentData]
+    "A list of either :class:`HistoryData` or :class:`CurrentData`"
     raw_items: dict[str, CurrentDCWorld | HistoryDCWorld]
+    "The JSON response data for each item in `<MultiPartData>.items`."
     item_ids: list[int]
+    "The list of item IDs."
     unresolved_items: list[int]
+    "The list of unresolved item IDs."
 
     __slots__ = ["item_ids", "items", "resolved_items", "unresolved_items"]
 

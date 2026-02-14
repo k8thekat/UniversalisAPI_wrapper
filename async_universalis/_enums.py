@@ -18,10 +18,10 @@ Software Foundation, 51 Franklin Street - Fifth Floor, Boston, MA
 02110-1301, USA.
 """
 
-from enum import IntEnum
+from enum import Enum, IntEnum
 from typing import ClassVar, Optional
 
-__all__ = ("DataCenter", "DataCenterToWorlds", "ItemQuality", "Language", "World")
+__all__ = ("DataCenter", "DataCenterToWorlds", "ItemQuality", "Language", "Region", "World")
 
 
 class Language(IntEnum):
@@ -29,6 +29,15 @@ class Language(IntEnum):
     de = 2
     ja = 3
     fr = 4
+
+
+class Region(Enum):
+    japan = "Japan"
+    europe = "Europe"
+    north_america = "North-America"
+    oceania = "Oceania"
+    china = "China"
+    中国 = "中国"  # noqa: PLC2401
 
 
 class DataCenter(IntEnum):

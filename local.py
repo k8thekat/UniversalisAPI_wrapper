@@ -7,82 +7,102 @@ import datetime
 from argparse import Namespace
 from pathlib import Path
 from time import time
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, TYPE_CHECKING
 from configparser import ConfigParser
 import sys
 import subprocess
 
-from async_universalis import  CurrentData, HistoryData, ItemQuality, UniversalisAPI, MultiPart, DataCenter, World
+from async_universalis import  CurrentData, HistoryData, ItemQuality, UniversalisAPI, MultiPart, DataCenter, World, HistoryDataEntries
+
+if TYPE_CHECKING:
+    from async_universalis import DataTypedAliase, MultiPartData
 
 local_data_path: Path = Path(__file__).parent.joinpath("local_data")
 response_path: Path = Path(__file__).parent.joinpath("garlandtools/_responses")
 LOGGER: logging.Logger = logging.getLogger(__name__)
 
 
+
+# Umbra: DC = Chaos
 async def local_test() -> None:
     stime = time()
     # item_id = 10373 # magitek repair materials
+    # await marketboard_parse(DataCenter.Chaos)
     async with UniversalisAPI() as market:
-        res = await market.get_current_data(36184)
-        print(res)
+        parse_items(market, world_or_dc=DataCenter.Chaos, stack_size= 2)
     LOGGER.info("Completed local_test() in %s seconds...", format(time() - stime, ".3f"))
     return
 
 async def dev_test() -> None:
-    items = [1, 10373]
+    pass
+
+
+async def marketboard_parse(world_or_dc: DataCenter | World) -> None:
+    path = Path(__file__).parent.joinpath("local_data/marketboard_hunt")
     async with UniversalisAPI() as market:
-        res: CurrentData | MultiPart | None = await market.get_bulk_current_data(items, world_or_dc=World.Zalera)
-        if isinstance(res, CurrentData):
-            "Current Data response."
-            print(res.listings)
-        elif isinstance(res, MultiPart):
-            print("Unresolved", res.unresolved_items)
-            print()
-            print(res)
-            print()
-            print(res.items[0])
-            print()
-            if isinstance(res.items[0], CurrentData):
-                print(res.items[0].listings[0])
-        else:
-            print("Failed", type(res))
+        items: list[int] = await market.get_marketable_items()
+        # print(len(items))
+        for indx in range(0, len(items)-1, 100):
+            r_indx = indx + 100
+            try:
+                res: HistoryData | MultiPart | None = await market.get_bulk_history_data(items[indx:r_indx], world_or_dc, num_listings=500, history=datetime.timedelta(days=14).total_seconds() )
+            except Exception as e:
+                res = None
+                LOGGER.error("Exception -> | Type: %s | Exc: %s", e)
+                pass
+           
+            if res is None:
+                LOGGER.warning("Failure to parse %s - %s of items", indx, r_indx)
+                continue
+            
+            write_data_to_file(f"items_{indx}-{r_indx}{world_or_dc.name}.json", res._raw, path)
+            LOGGER.info("Parsed %s -> %s items", indx, r_indx)
 
-
-
-async def build_test() -> None:
-    """ """
-    item_id = 10373  # Magitek Repair Materials.
-    async with UniversalisAPI() as market:
-        print(market.default_datacenter.name, market.language.name)
-        # item_id = 46058  # Ceremonial Tunic of Healing
-        cur_data = await market.get_current_data(
-            item=item_id,
-            num_listings=100,
-            num_history_entries=100,
-            item_quality=ItemQuality.NQ,
-        )
-        print(cur_data.listings)
-
-        history_bulk_data: list[HistoryData] = await market.get_bulk_history_data(items=[3, 4, 5])
-        print(history_bulk_data)
-
-        sugg_data = await market.get_suggested_price(item=3)
-        print(sugg_data)
-        print("BULK ITEM TESTING")
-        item_ids = []
-        for key, entry in market.item_dict.items():
-            if "materia" in entry.get("en").lower():
-                item_ids.append(key)
-        print(len(item_ids))
-        try:
-            data = await market.get_bulk_current_data(
-                items=item_ids,
-                num_listings=100,
-                num_history_entries=100,
-                item_quality=ItemQuality.NQ,
+def parse_items(self: UniversalisAPI, world_or_dc: World | DataCenter, low_ppu: int = 500, low_velocity: int = 10, stack_size: int = 1) -> None:
+    path = Path(__file__).parent.joinpath(f"local_data/marketboard_hunt/{world_or_dc.name}")
+    if path.exists() is False:
+        LOGGER.error("<%s.%s> | Failed to find a path related to the world_or_dc. | World or DC: %s | Path: %s", "local", "parse_items", world_or_dc, path)
+        return
+    files = [entry for entry in path.iterdir()]
+    files = sorted(files)
+    universalis = self
+    data: Optional[MultiPart] = None
+    for file in files:
+        # print(file)
+        res: MultiPartData = json.load(file.open())
+        if data is None:
+            data = MultiPart(
+                universalis=universalis,
+                resolved_items=[HistoryData(universalis=universalis, data=value) for value in res.get("items").values() if "entries" in value],
+                **res,
             )
-        except Exception as e:
-            print(e)
+        else:
+            data.items.extend([HistoryData(universalis=universalis, data=value) for value in res.get("items").values() if "entries" in value])
+            data.item_ids.extend(res.get("itemIDs"))
+            data.unresolved_items.extend(res["unresolvedItems"])
+
+    if data is None:
+        LOGGER.error("Data Items is None")
+        return
+    results: list[str] = []
+    # Sort our items by sale velocity, then look at the price per unit/stack size.
+    for item in sorted(data.items, key= lambda x: x.regular_sale_velocity, reverse=True):
+        if item.regular_sale_velocity > 0 :
+            if isinstance(item, HistoryData):
+                try:
+                    entry: HistoryDataEntries = item.entries[0]
+                    # and item.regular_sale_velocity < entry.quantity 
+                    if entry.quantity >= stack_size and item.regular_sale_velocity >= low_velocity and entry.price_per_unit >= low_ppu:
+                        LOGGER.info("Item Name: %s [%s]",item.name, item.item_id)
+                        LOGGER.info("Sale Velocity: %s", item.regular_sale_velocity)
+                        LOGGER.info("PPU: %s | Stack Size Sold: %s", entry.price_per_unit, entry.quantity)
+                        results.append(f"Item: {item.name}[{item.item_id}] || Sale Velocity: {item.regular_sale_velocity} || PPU: {entry.price_per_unit} || Stack Size: {entry.quantity}")
+                except IndexError:
+                    continue
+    write_data_to_file(f"{world_or_dc.name}_results.md", data=results)
+
+        
+
 
 
 def ini_load(file: Path, section: str, options: list[str]) -> list[str | None]:
