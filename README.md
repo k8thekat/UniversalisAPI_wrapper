@@ -17,6 +17,12 @@ A simple and light weight wrapper for [Universalis](https://universalis.app) mar
     - `UniversalisAPI.get_current_data()` and `UniversalisAPI.get_bulk_current_data()`
 - https://docs.universalis.app/#market-board-sale-history
     - `UniversalisAPI.get_history_data()` and `UniversalisAPI.get_bulk_history_data()`
+- https://docs.universalis.app/#market-tax-rates
+    - `UniversalisAPI.get_market_tax_rates()`
+- https://docs.universalis.app/#marketable-items
+    - `UniversalisAPI.get_marketable_items()`
+- https://docs.universalis.app/#current-item-price
+    - `UniversalisAPI.get_aggregated_data()` *By default supports no more than 100 items*
 
 
 ## Example

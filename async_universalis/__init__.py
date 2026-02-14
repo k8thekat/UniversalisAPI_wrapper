@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "6.0.0-dev"
+__version__ = "6.0.1-dev"
 __credits__ = "Universalis and Square Enix"
 
 
