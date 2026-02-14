@@ -1,3 +1,11 @@
+# Version - 6.0.0-dev - [9801aac](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/9801aac)
+## Additional endpoints added!
+- Added new endpoints `get_aggregated_data()`, `get_marketable_items()` and `get_market_tax_rates()`.
+- Updated docstrings and attribute docs for better info via Intellisense/Linters.
+- Updated number of entries for history results from `10` to `25`.
+- Added functionality to update the `items.json` file for `item_id` lookups. See `get_update_items()` and `write_data_to_file()`.
+- Reorganized some functions.
+
 # Version - 5.0.1-dev - [ad0683b](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/ad0683b)
 ## Minor fixes for endpoints.
 - Changed parameter type for `item_quality` from Enum to Literal strings.
