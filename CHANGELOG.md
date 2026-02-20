@@ -1,3 +1,8 @@
+# Version - 6.0.2-dev - [857a9e5](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/857a9e5)
+## General function parameter update (defaults)
+- Changed all `world_or_dc` function parameters to no longer default to `None` and now use `DEFAULT_DATACENTER`.
+- Minor wording and format change to `UniversalisError` message.
+
 # Version - 6.0.1-dev - [e2856f0](https://github.com/k8thekat/UniversalisAPI_wrapper/commit/e2856f0)
 ## Updated README.md
 - Added the new endpoints to the documentation.
