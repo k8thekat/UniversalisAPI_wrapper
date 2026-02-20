@@ -27,6 +27,6 @@ LOGGER = logging.getLogger("universalis.errors")
 
 class UniversalisError(Exception):  # noqa: D101
     def __init__(self, status_code: int, url: str, error_reason: str) -> None:  # noqa: D107
-        message = "We encountered an error during a request to Universalis in %s. Current URL: %r | Status Code: %s"
+        message = "We encountered an error during a request to Universalis '%s'. Current URL: '%r' | Status Code: '%s'"
         super().__init__(message, error_reason, url, status_code)
         LOGGER.error(message, error_reason, url, status_code)

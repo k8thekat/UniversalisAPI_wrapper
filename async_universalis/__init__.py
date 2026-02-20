@@ -23,7 +23,7 @@ from __future__ import annotations
 __title__ = "Universalis API wrapper"
 __author__ = "k8thekat"
 __license__ = "GNU"
-__version__ = "6.0.1-dev"
+__version__ = "6.0.2-dev"
 __credits__ = "Universalis and Square Enix"
 
 
@@ -441,7 +441,7 @@ class UniversalisAPI:
     async def get_current_data(
         self,
         item: str | int,
-        world_or_dc: Optional[DataCenter | World] = None,
+        world_or_dc: DataCenter | World = DEFAULT_DATACENTER,
         *,
         num_listings: int = 25,
         num_history_entries: int = 25,
@@ -495,9 +495,7 @@ class UniversalisAPI:
         # Sanitize the value as a str for usage.
         if isinstance(item, int):
             item = str(item)
-        # If no datacenter is provided; use the libs Instance default.
-        if world_or_dc is None:
-            world_or_dc = self.default_datacenter
+
 
         quality = 1 if item_quality == "HQ" else 0
 
@@ -516,7 +514,7 @@ class UniversalisAPI:
     async def get_bulk_current_data(
         self,
         items: list[str] | list[int],
-        world_or_dc: Optional[DataCenter | World] = None,
+        world_or_dc: DataCenter | World = DEFAULT_DATACENTER,
         *,
         num_listings: int = 25,
         num_history_entries: int = 25,
@@ -579,9 +577,6 @@ class UniversalisAPI:
             If the `items` parameter is of the wrong type.
 
         """
-        if world_or_dc is None:
-            world_or_dc = self.default_datacenter
-
         # Not sure if this is needed entirely; but in case someone passes in a wrong data structure.
         if isinstance(items, (str, int)):
             msg = "You must provide a value of type <class list[class int]> or <class list[class str]> not <%s>."
@@ -639,7 +634,7 @@ class UniversalisAPI:
     async def get_history_data(
         self,
         item: str | int,
-        world_or_dc: Optional[World | DataCenter] = None,
+        world_or_dc: World | DataCenter = DEFAULT_DATACENTER,
         *,
         num_listings: int = 25,
         min_price: int = 1,
@@ -707,7 +702,7 @@ class UniversalisAPI:
     async def get_bulk_history_data(
         self,
         items: list[str] | list[int],
-        world_or_dc: Optional[World | DataCenter] = None,
+        world_or_dc: World | DataCenter = DEFAULT_DATACENTER,
         *,
         num_listings: int = 50,
         min_price: int = 1,
@@ -829,7 +824,7 @@ class UniversalisAPI:
     async def get_aggregated_data(
         self,
         items: list[str] | list[int],
-        world_dc_region: World | DataCenter | Region,
+        world_dc_region: World | DataCenter | Region = DEFAULT_DATACENTER,
         **request_params: Unpack[AiohttpRequestOptions],
     ) -> AggregatedResponse:
         """Retrieves aggregated market board data for the given items.
